@@ -21,6 +21,10 @@ var Sk = Sk || {}; //jshint ignore:line
  */
 Sk.configure = function (options) {
     "use strict";
+    
+    Sk.robotEnv = options["robotEnv"] || Sk.fillEnv({});
+    Sk.checkEnv(Sk.robotEnv);
+    
     Sk.output = options["output"] || Sk.output;
     goog.asserts.assert(typeof Sk.output === "function");
 
@@ -68,6 +72,72 @@ Sk.configure = function (options) {
     Sk.misceval.softspace_ = false;
 };
 goog.exportSymbol("Sk.configure", Sk.configure);
+
+Sk.fillEnv = function(env) {
+    env.action = env.action || function() {};
+    env.walls = env.walls || [];
+    env.startRow = env.startRow || 1;
+    env.startCol = env.startCol || 1;
+    env.width = env.width || 3;
+    env.height = env.height || 2;
+    return env;
+};
+
+Sk.checkEnv = function(env) {
+    if (env == null || typeof env != "object") {
+        throw "Environment. No environment";
+    }
+    checkCallback("action");
+    checkDim("width");
+    checkDim("height");
+    checkPos(env, "startRow", "height");
+    checkPos(env, "startCol", "width");
+    
+    if (Object.prototype.toString.call(env.walls) != "[object Array]" ) {
+        throw "Environment. Wrong walls";
+    }
+    
+    for (var i = 0; i < env.walls.length; i++) {
+        var cells = env.walls[i];
+        if (Object.prototype.toString.call(cells) != "[object Array]" || cells.length != 2) {
+            throw "Environment. Wrong wall, number: " + i;
+        }
+        try {
+            checkCell(cells[0]);
+            checkCell(cells[1]);
+        }
+        catch (e) {
+            throw e.toString() + " (wall number: " + i + ")" ;
+        }
+    }
+    
+    function checkCallback(callback) {
+        if (typeof env[callback] != "function") {
+            throw "Environment. No '" + callback + "' callback";
+        }
+    }
+    
+    function checkDim(dim) {
+        if (typeof env[dim] != "number" || env[dim] < 1) {
+            throw "Environment. Wrong " + dim;
+        }
+    }
+    
+    function checkPos(env, pos, dim) {
+        if (typeof env[pos] != "number" || env[pos] < 0 || env[pos] >= env[dim]) {
+            throw "Environment. Wrong " + pos;
+        }
+    }
+    
+    function checkCell(cell) {
+        if (cell == null || typeof cell != "object") {
+            throw "Environment. Wrong wall";
+        }
+        checkPos(cell, "r", "height");
+        checkPos(cell, "c", "width");
+    }
+};
+
 
 /*
  *	Replaceable message for message timeouts
