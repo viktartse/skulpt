@@ -24,7 +24,10 @@ Sk.configure = function (options) {
     
     Sk.robotEnv = options["robotEnv"] || Sk.fillEnv({});
     Sk.checkEnv(Sk.robotEnv);
-    
+
+    Sk.robotActionsLimit = options["robotActionsLimit"] || 200;
+    goog.asserts.assert(typeof Sk.robotActionsLimit === "number");
+
     Sk.output = options["output"] || Sk.output;
     goog.asserts.assert(typeof Sk.output === "function");
 

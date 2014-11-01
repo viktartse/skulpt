@@ -7,17 +7,27 @@
 var $builtinmodule = function () {
     "use strict";
 
-    var curR, curC, walls, width, height;
+    var curR, curC, walls, width, height, actionsDone;
     
     resetEnv();
 
     return {
-        right: new Sk.builtin.func(right),
-        left: new Sk.builtin.func(left),
-        up: new Sk.builtin.func(up),
-        down: new Sk.builtin.func(down),
-        paint: new Sk.builtin.func(paint),
+        right: new Sk.builtin.func(doActionAndCheckLimits(right)),
+        left: new Sk.builtin.func(doActionAndCheckLimits(left)),
+        up: new Sk.builtin.func(doActionAndCheckLimits(up)),
+        down: new Sk.builtin.func(doActionAndCheckLimits(down)),
+        paint: new Sk.builtin.func(doActionAndCheckLimits(paint)),
     };
+
+    function doActionAndCheckLimits(action) {
+        return function() {
+            action();
+            actionsDone++;
+            if (Sk.robotActionsLimit && Sk.robotActionsLimit < actionsDone) {
+                throw new Sk.builtin.Exception("Robot has done too many actions and crashed.");
+            }
+        };
+    }
 
     function right() {
         Sk.builtin.pyCheckArgs("right", arguments, 0, 0);
@@ -61,6 +71,8 @@ var $builtinmodule = function () {
 
     function resetEnv() {
         Sk.builtin.pyCheckArgs("resetEnv", arguments, 0, 0);
+
+        actionsDone = 0;
 
         // form walls
         walls = {};
