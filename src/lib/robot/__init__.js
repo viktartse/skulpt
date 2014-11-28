@@ -60,7 +60,7 @@ var $builtinmodule = function () {
     function AssertThereIsWayTo(r, c) {
         var wallKey = createWallKey({r: curR, c: curC}, {r: r, c: c});
         if (walls[wallKey] === true || r < 0 || r >= height || c < 0 || c >= width) {
-            throw new Sk.builtin.Exception("An attempt to walk through a wall. The robot is crashed."); 
+            throw new Sk.builtin.Exception("an attempt to walk through a wall"); 
         }
     }
 
