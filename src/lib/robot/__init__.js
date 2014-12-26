@@ -24,7 +24,7 @@ var $builtinmodule = function () {
             action();
             actionsDone++;
             if (Sk.robotActionsLimit && Sk.robotActionsLimit < actionsDone) {
-                throw new Sk.builtin.Exception("Robot has done too many actions and crashed.");
+                throw new Sk.builtin.Exception("too many actions");
             }
         };
     }
@@ -76,13 +76,15 @@ var $builtinmodule = function () {
 
         // form walls
         walls = {};
-        for (var i = 0; i < Sk.robotEnv.walls.length; i++) {
-            var cell1 = Sk.robotEnv.walls[i][0];
-            var cell2 = Sk.robotEnv.walls[i][1];
-            var wallKey1 = createWallKey(cell1, cell2);
-            var wallKey2 = createWallKey(cell2, cell1);
-            walls[wallKey1] = true;
-            walls[wallKey2] = true;
+        if (Sk.robotEnv.walls) {
+            for (var i = 0; i < Sk.robotEnv.walls.length; i++) {
+                var cell1 = Sk.robotEnv.walls[i][0];
+                var cell2 = Sk.robotEnv.walls[i][1];
+                var wallKey1 = createWallKey(cell1, cell2);
+                var wallKey2 = createWallKey(cell2, cell1);
+                walls[wallKey1] = true;
+                walls[wallKey2] = true;
+            }
         }
 
         curR = Sk.robotEnv.startRow;
