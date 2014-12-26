@@ -72,6 +72,7 @@ goog.exportSymbol("Sk.configure", Sk.configure);
 Sk.fillEnv = function(env) {
     env.action = env.action || function() {};
     env.walls = env.walls || [];
+    env.paintedCells = env.paintedCells || [];
     env.startRow = env.startRow || 1;
     env.startCol = env.startCol || 1;
     env.width = env.width || 3;
@@ -79,7 +80,8 @@ Sk.fillEnv = function(env) {
     return env;
 };
 
-Sk.checkEnv = function(env) {
+Sk.checkEnv = function (env) {
+    var i;
     if (env == null || typeof env != "object") {
         throw "Environment. No environment";
     }
@@ -89,11 +91,19 @@ Sk.checkEnv = function(env) {
     checkPos(env, "startRow", "height");
     checkPos(env, "startCol", "width");
     
-    if (Object.prototype.toString.call(env.walls) != "[object Array]" ) {
+    if (Object.prototype.toString.call(env.paintedCells) != "[object Array]") {
+        throw "Environment. Wrong painted cells";
+    }
+
+    for (i = 0; i < env.paintedCells.length; i++) {
+        checkCell(env.paintedCells[i]);
+    }
+
+    if (Object.prototype.toString.call(env.walls) != "[object Array]") {
         throw "Environment. Wrong walls";
     }
     
-    for (var i = 0; i < env.walls.length; i++) {
+    for (i = 0; i < env.walls.length; i++) {
         var cells = env.walls[i];
         if (Object.prototype.toString.call(cells) != "[object Array]" || cells.length != 2) {
             throw "Environment. Wrong wall, number: " + i;
@@ -127,7 +137,7 @@ Sk.checkEnv = function(env) {
     
     function checkCell(cell) {
         if (cell == null || typeof cell != "object") {
-            throw "Environment. Wrong wall";
+            throw "Environment. Wrong cell";
         }
         checkPos(cell, "r", "height");
         checkPos(cell, "c", "width");
