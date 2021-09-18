@@ -74,10 +74,13 @@ Sk.python3 = {
 
 Sk.configure = function (options) {
     "use strict";
-    
-    Sk.robotEnv = options["robotEnv"] || Sk.fillEnv({});
-    Sk.checkEnv(Sk.robotEnv);
-    
+
+    Sk.robot = options["robot"] || undefined;
+    Sk.checkRobot(Sk.robot);
+
+    Sk.send_message = options["send_message"] || function() {};
+    Sk.asserts.assert(typeof Sk.send_message === "function");
+
     Sk.output = options["output"] || Sk.output;
     Sk.asserts.assert(typeof Sk.output === "function");
 
@@ -232,58 +235,25 @@ Sk.fillEnv = function(env) {
     return env;
 };
 
-Sk.checkEnv = function(env) {
-    if (env == null || typeof env != "object") {
-        throw "Environment. No environment";
+Sk.checkRobot = function(robotImplementation) {
+    if (!robotImplementation) {
+        return;
     }
-    checkCallback("action");
-    checkDim("width");
-    checkDim("height");
-    checkPos(env, "startRow", "height");
-    checkPos(env, "startCol", "width");
-    
-    if (Object.prototype.toString.call(env.walls) != "[object Array]" ) {
-        throw "Environment. Wrong walls";
+
+    if (typeof robotImplementation != "object") {
+        throw "Robot. Robot implementation must be an object";
     }
-    
-    for (var i = 0; i < env.walls.length; i++) {
-        var cells = env.walls[i];
-        if (Object.prototype.toString.call(cells) != "[object Array]" || cells.length != 2) {
-            throw "Environment. Wrong wall, number: " + i;
+
+    checkRobotMethod("move");
+    checkRobotMethod("isWallFrom");
+    checkRobotMethod("isFreeFrom");
+    checkRobotMethod("paint");
+    checkRobotMethod("isCellPainted");
+
+    function checkRobotMethod(method) {
+        if (typeof robotImplementation[method] != "function") {
+            throw "Robot. No method '" + method + "' found";
         }
-        try {
-            checkCell(cells[0]);
-            checkCell(cells[1]);
-        }
-        catch (e) {
-            throw e.toString() + " (wall number: " + i + ")" ;
-        }
-    }
-    
-    function checkCallback(callback) {
-        if (typeof env[callback] != "function") {
-            throw "Environment. No '" + callback + "' callback";
-        }
-    }
-    
-    function checkDim(dim) {
-        if (typeof env[dim] != "number" || env[dim] < 1) {
-            throw "Environment. Wrong " + dim;
-        }
-    }
-    
-    function checkPos(env, pos, dim) {
-        if (typeof env[pos] != "number" || env[pos] < 0 || env[pos] >= env[dim]) {
-            throw "Environment. Wrong " + pos;
-        }
-    }
-    
-    function checkCell(cell) {
-        if (cell == null || typeof cell != "object") {
-            throw "Environment. Wrong wall";
-        }
-        checkPos(cell, "r", "height");
-        checkPos(cell, "c", "width");
     }
 };
 

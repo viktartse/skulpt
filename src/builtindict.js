@@ -3,6 +3,7 @@
 // Javascript. This is a bit hokey.
 
 Sk.builtins = {
+    "send_message" : Sk.builtin.send_message,
     "round"     : null,
     "len"       : null,
     "min"       : null,

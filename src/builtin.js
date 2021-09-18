@@ -7,6 +7,7 @@
  * work, etc.
  */
 
+Sk.builtin.send_message = function (x) { return Sk.send_message(Sk.ffi.remapToJs(x)); };
 
 Sk.builtin.asnum$ = function (a) {
     if (a === undefined) {
