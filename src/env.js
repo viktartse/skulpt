@@ -249,6 +249,7 @@ Sk.checkRobot = function(robotImplementation) {
     checkRobotMethod("isFreeFrom");
     checkRobotMethod("paint");
     checkRobotMethod("isCellPainted");
+    checkRobotMethod("getPollutionLevel");
 
     function checkRobotMethod(method) {
         if (typeof robotImplementation[method] != "function") {

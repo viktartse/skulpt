@@ -13,6 +13,7 @@ var $builtinmodule = function() {
         is_wall_from: new Sk.builtin.func(checkAndRun(Sk.robot.isWallFrom)),
         is_free_from: new Sk.builtin.func(checkAndRun(Sk.robot.isFreeFrom)),
         is_cell_painted: new Sk.builtin.func(checkAndRun(Sk.robot.isCellPainted)),
+        get_pollution_level: new Sk.builtin.func(checkAndRun(Sk.robot.getPollutionLevel)),
     };
 
     function checkAndRun(method){
