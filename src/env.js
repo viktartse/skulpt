@@ -75,7 +75,7 @@ Sk.python3 = {
 Sk.configure = function (options) {
     "use strict";
 
-    Sk.robot = options["robot"] || undefined;
+    Sk.robot = options["robot"];
     Sk.checkRobot(Sk.robot);
 
     Sk.send_message = options["send_message"] || function() {};
@@ -225,16 +225,6 @@ Sk.configure = function (options) {
 
 Sk.exportSymbol("Sk.configure", Sk.configure);
 
-Sk.fillEnv = function(env) {
-    env.action = env.action || function() {};
-    env.walls = env.walls || [];
-    env.startRow = env.startRow || 1;
-    env.startCol = env.startCol || 1;
-    env.width = env.width || 3;
-    env.height = env.height || 2;
-    return env;
-};
-
 Sk.checkRobot = function(robotImplementation) {
     if (!robotImplementation) {
         return;
@@ -250,6 +240,7 @@ Sk.checkRobot = function(robotImplementation) {
     checkRobotMethod("paint");
     checkRobotMethod("isCellPainted");
     checkRobotMethod("getPollutionLevel");
+    checkRobotMethod("printNumber");
 
     function checkRobotMethod(method) {
         if (typeof robotImplementation[method] != "function") {
