@@ -1,0 +1,11 @@
+[
+   "src/lib/webgl",
+   "src/lib/test",
+   "src/lib/unittest",
+   "src/lib/urllib",
+   "src/lib/processing.js",
+   "src/lib/image.js",
+   "src/lib/webbrowser.js",
+   "src/lib/calendar.js",
+   "src/lib/_strptime.js"
+]
