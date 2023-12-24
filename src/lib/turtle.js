@@ -1900,6 +1900,7 @@ function generateTurtleModule(_target) {
         context.stroke();
         context.stroke();
         context.stroke();
+        context.stroke();
     }
 
     function drawFill() {
