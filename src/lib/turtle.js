@@ -1898,6 +1898,8 @@ function generateTurtleModule(_target) {
         context.strokeStyle = this.color;
         context.lineTo(loc.x, loc.y);
         context.stroke();
+        context.stroke();
+        context.stroke();
     }
 
     function drawFill() {
