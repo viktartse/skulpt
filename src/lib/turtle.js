@@ -1881,26 +1881,84 @@ function generateTurtleModule(_target) {
         context.restore();
     }
 
-    function drawLine(loc, beginPath, endPath) {
-        // TODO: make steps in path use square ends of lines
-        // and open and close path at the right times.
-        // See if we can minimize calls to stroke
-        var context = this.context();
+    function drawLine(loc, beginPath) {
+        const context = this.context();
 
         if (!context) return;
 
-        if (beginPath) {
-            context.beginPath();
-            context.moveTo(this.x, this.y);
-        }
+        context.lineWidth = normalizeWidth(this.size * getScreen().lineScale);
+        context.fillStyle = this.color;
 
-        context.lineWidth   = this.size * getScreen().lineScale;
-        context.strokeStyle = this.color;
-        context.lineTo(loc.x, loc.y);
-        context.stroke();
-        context.stroke();
-        context.stroke();
-        context.stroke();
+        drawLineDdaBased(this.x, this.y, loc.x, loc.y, context);
+    }
+    
+    function normalizeWidth(width) {
+        const maxWidth = 200;
+        const minWidth = 1;
+
+        width = Math.round(width);
+        width = width > maxWidth ? maxWidth : width; 
+        return width < minWidth ? minWidth : width;
+    }
+    
+    function drawLineDdaBased(x1, y1, x2, y2, context) {
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        
+        if (Math.abs(dx) > Math.abs(dy)) {
+            let intX1 = Math.round(x1);
+            let intX2 = Math.round(x2);
+            [intX1, intX2] = [Math.min(intX1, intX2), Math.max(intX1, intX2)];
+            for (let x = intX1; x <= intX2; x++) {
+                const t = (x - x1) / dx;
+                const y = Math.round(dy * t + y1);
+                drawWidePixel(x, y, context);
+            }
+        } else {
+            let intY1 = Math.round(y1);
+            let intY2 = Math.round(y2);
+            [intY1, intY2] = [Math.min(intY1, intY2), Math.max(intY1, intY2)];
+            for (let y = intY1; y <= intY2; y++) {
+                const t = (y - y1) / dy;
+                const x = Math.round(dx * t + x1);
+                drawWidePixel(x, y, context);
+            }
+        }
+    }
+    
+    function drawWidePixel(x, y, context)
+    {
+        // The visual result is better this way
+        if (context.lineWidth % 2 === 0) {
+            x = x - 0.5;
+            y = y - 0.5;
+        }
+        const radius = context.lineWidth / 2;
+
+        const xStart = Math.round(x - radius);
+        const xEnd = Math.round(x + radius);
+        const yStart = Math.round(y - radius);
+        const yEnd = Math.round(y + radius);
+
+        for (let y0 = yStart; y0 <= yEnd; y0++) {
+            let foundFilledPixel = false;
+            let begX = 0;
+            for (let x0 = xStart; x0 <= xEnd; x0++) {
+                // Here we try to find first and last pixels in the row that must be painted.
+                // All other pixels between them must be painted as well
+                
+                // Do we need to paint this pixel?
+                if ((x0 - x) ** 2 + (y0 - y) ** 2 <= radius ** 2) {
+                    if (!foundFilledPixel) begX = x0;
+                    foundFilledPixel = true;
+                } else if (foundFilledPixel) {
+                    // Draw the whole line. This is a performance optimization.
+                    // It's better to call fillRect as rare as possible. So let's draw as many pixels as we can at once
+                    context.fillRect(begX, y0, x0 - begX, 1);
+                    break;
+                }
+            }
+        }
     }
 
     function drawFill() {
