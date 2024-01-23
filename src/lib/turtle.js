@@ -1893,7 +1893,7 @@ function generateTurtleModule(_target) {
     }
     
     function normalizeWidth(width) {
-        const maxWidth = 200;
+        const maxWidth = 1000;
         const minWidth = 1;
 
         width = Math.round(width);
@@ -1904,7 +1904,11 @@ function generateTurtleModule(_target) {
     function drawLineDdaBased(x1, y1, x2, y2, context) {
         const dx = x2 - x1;
         const dy = y2 - y1;
-        
+        const pixel = drawReferencePixelOnOffScreenCanvas(context.lineWidth, context.fillStyle);
+
+        const width2 = Math.floor(context.lineWidth / 2);
+        const drawPixelFunc = context.lineWidth > 3 ? drawRoundPixel : drawSquarePixel;
+
         if (Math.abs(dx) > Math.abs(dy)) {
             let intX1 = Math.round(x1);
             let intX2 = Math.round(x2);
@@ -1912,7 +1916,7 @@ function generateTurtleModule(_target) {
             for (let x = intX1; x <= intX2; x++) {
                 const t = (x - x1) / dx;
                 const y = Math.round(dy * t + y1);
-                drawWidePixel(x, y, context);
+                drawPixelFunc(x, y, width2, context.lineWidth, context, pixel);
             }
         } else {
             let intY1 = Math.round(y1);
@@ -1921,44 +1925,64 @@ function generateTurtleModule(_target) {
             for (let y = intY1; y <= intY2; y++) {
                 const t = (y - y1) / dy;
                 const x = Math.round(dx * t + x1);
-                drawWidePixel(x, y, context);
+                drawPixelFunc(x, y, width2, context.lineWidth, context, pixel);
             }
         }
     }
-    
-    function drawWidePixel(x, y, context)
+
+    function drawRoundPixel(x, y, width2, width, context, pixel)
     {
+        context.drawImage(pixel, x - width2, y - width2);
+    }
+
+    function drawSquarePixel(x, y, width2, width, context, pixel)
+    {
+        context.fillRect(x - width2, y - width2, width, width);
+    }
+
+    function drawReferencePixelOnOffScreenCanvas(width, fillStyle) {
+        const offscreenCanvas = document.createElement('canvas');
+        offscreenCanvas.width = width;
+        offscreenCanvas.height = width;
+        
+        const context = offscreenCanvas.getContext('2d');
+        context.fillStyle = fillStyle;
+        
+        let x = Math.floor(width / 2);
+        let y = Math.floor(width / 2);
         // The visual result is better this way
-        if (context.lineWidth % 2 === 0) {
+        if (width % 2 === 0) {
             x = x - 0.5;
             y = y - 0.5;
         }
-        const radius = context.lineWidth / 2;
+        const radius = width / 2;
 
         const xStart = Math.round(x - radius);
         const xEnd = Math.round(x + radius);
         const yStart = Math.round(y - radius);
         const yEnd = Math.round(y + radius);
+        const r2 = radius ** 2;
 
         for (let y0 = yStart; y0 <= yEnd; y0++) {
             let foundFilledPixel = false;
             let begX = 0;
+            const dy2 = (y0 - y) * (y0 - y);
             for (let x0 = xStart; x0 <= xEnd; x0++) {
                 // Here we try to find first and last pixels in the row that must be painted.
                 // All other pixels between them must be painted as well
-                
+
                 // Do we need to paint this pixel?
-                if ((x0 - x) ** 2 + (y0 - y) ** 2 <= radius ** 2) {
+                if ((x0 - x) * (x0 - x) + dy2 <= r2) {
                     if (!foundFilledPixel) begX = x0;
                     foundFilledPixel = true;
                 } else if (foundFilledPixel) {
-                    // Draw the whole line. This is a performance optimization.
-                    // It's better to call fillRect as rare as possible. So let's draw as many pixels as we can at once
                     context.fillRect(begX, y0, x0 - begX, 1);
                     break;
                 }
             }
         }
+
+        return offscreenCanvas;
     }
 
     function drawFill() {
