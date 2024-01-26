@@ -1881,7 +1881,7 @@ function generateTurtleModule(_target) {
         context.restore();
     }
 
-    function drawLine(loc, beginPath) {
+    function drawLine(loc) {
         const context = this.context();
 
         if (!context) return;
@@ -1890,15 +1890,6 @@ function generateTurtleModule(_target) {
         context.fillStyle = this.color;
 
         drawLineDdaBased(this.x, this.y, loc.x, loc.y, context);
-    }
-    
-    function normalizeWidth(width) {
-        const maxWidth = 1000;
-        const minWidth = 1;
-
-        width = Math.round(width);
-        width = width > maxWidth ? maxWidth : width; 
-        return width < minWidth ? minWidth : width;
     }
     
     function drawLineDdaBased(x1, y1, x2, y2, context) {
@@ -1910,24 +1901,40 @@ function generateTurtleModule(_target) {
         const drawPixelFunc = context.lineWidth > 3 ? drawRoundPixel : drawSquarePixel;
 
         if (Math.abs(dx) > Math.abs(dy)) {
-            let intX1 = Math.round(x1);
-            let intX2 = Math.round(x2);
+            let intX1 = getPixelNumber(x1);
+            let intX2 = getPixelNumber(x2);
             [intX1, intX2] = [Math.min(intX1, intX2), Math.max(intX1, intX2)];
             for (let x = intX1; x <= intX2; x++) {
                 const t = (x - x1) / dx;
-                const y = Math.round(dy * t + y1);
+                const y = getPixelNumber(dy * t + y1);
                 drawPixelFunc(x, y, width2, context.lineWidth, context, pixel);
             }
         } else {
-            let intY1 = Math.round(y1);
-            let intY2 = Math.round(y2);
+            let intY1 = getPixelNumber(y1);
+            let intY2 = getPixelNumber(y2);
             [intY1, intY2] = [Math.min(intY1, intY2), Math.max(intY1, intY2)];
             for (let y = intY1; y <= intY2; y++) {
                 const t = (y - y1) / dy;
-                const x = Math.round(dx * t + x1);
+                const x = getPixelNumber(dx * t + x1);
                 drawPixelFunc(x, y, width2, context.lineWidth, context, pixel);
             }
         }
+    }
+
+    function getPixelNumber(n)
+    {
+        // to be better aligned with the standard "fill" implementation
+        // for canvas
+        return Math.floor(n - 0.01)
+    }
+    
+    function normalizeWidth(width) {
+        const maxWidth = 2000;
+        const minWidth = 1;
+
+        width = Math.round(width);
+        width = width > maxWidth ? maxWidth : width;
+        return width < minWidth ? minWidth : width;
     }
 
     function drawRoundPixel(x, y, width2, width, context, pixel)
@@ -1935,7 +1942,7 @@ function generateTurtleModule(_target) {
         context.drawImage(pixel, x - width2, y - width2);
     }
 
-    function drawSquarePixel(x, y, width2, width, context, pixel)
+    function drawSquarePixel(x, y, width2, width, context)
     {
         context.fillRect(x - width2, y - width2, width, width);
     }
@@ -2001,18 +2008,16 @@ function generateTurtleModule(_target) {
         context.closePath();
         context.fillStyle = this.fill;
         context.fill();
-        for(i = 1; i < path.length; i++) {
+        for(i = 1; i < path.length - 1; i++) {
             if (!path[i].stroke) {
                 continue;
             }
-
-            context.beginPath();
-            context.moveTo(path[i-1].x, path[i-1].y);
-            context.lineWidth   = path[i].size * getScreen().lineScale;
-            context.strokeStyle = path[i].color;
-            context.lineTo(path[i].x, path[i].y);
-            context.stroke();
+            
+            context.lineWidth = normalizeWidth(path[i].size * getScreen().lineScale);
+            context.fillStyle = path[i].color;
+            drawLineDdaBased(path[i].x, path[i].y, path[i + 1].x, path[i + 1].y, context);
         }
+
         context.restore();
     }
 
