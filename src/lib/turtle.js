@@ -1929,7 +1929,7 @@ function generateTurtleModule(_target) {
     }
     
     function normalizeWidth(width) {
-        const maxWidth = 2000;
+        const maxWidth = 1000;
         const minWidth = 1;
 
         width = Math.round(width);
@@ -2008,17 +2008,43 @@ function generateTurtleModule(_target) {
         context.closePath();
         context.fillStyle = this.fill;
         context.fill();
+
+        const pathLength = getPathLength(path);
+        // if drawing lines starts to take too much time, I don't want browser to freeze
+        const maxLengthForCustomLineDrawing = 200000; // empiric value
+        const preferQuality = pathLength < maxLengthForCustomLineDrawing;
+        
         for(i = 1; i < path.length - 1; i++) {
             if (!path[i].stroke) {
                 continue;
             }
-            
+
             context.lineWidth = normalizeWidth(path[i].size * getScreen().lineScale);
-            context.fillStyle = path[i].color;
-            drawLineDdaBased(path[i].x, path[i].y, path[i + 1].x, path[i + 1].y, context);
+
+            if (preferQuality) {
+                context.fillStyle = path[i].color;
+                drawLineDdaBased(path[i].x, path[i].y, path[i + 1].x, path[i + 1].y, context);
+            } else {
+                context.beginPath();
+                context.moveTo(path[i].x, path[i].y);
+                context.strokeStyle = path[i].color;
+                context.lineTo(path[i + 1].x, path[i + 1].y);
+                context.stroke();
+            }
         }
 
         context.restore();
+    }
+    
+    function getPathLength(path) {
+        let dist = 0;
+        for (let i = 0; i < path.length - 1; i ++) {
+            const elem1 = path[i];
+            const elem2 = path[i + 1];
+            dist += Math.sqrt((elem1.x - elem2.x) ** 2 + (elem1.y - elem2.y) ** 2);
+        }
+        
+        return dist;
     }
 
     function partialTranslate(turtle, x, y, beginPath, countAsFrame) {
