@@ -1939,12 +1939,23 @@ function generateTurtleModule(_target) {
 
     function drawRoundPixel(x, y, width2, width, context, pixel)
     {
+        if (!isPixelVisible(x, y, width2)) return;
         context.drawImage(pixel, x - width2, y - width2);
     }
 
     function drawSquarePixel(x, y, width2, width, context)
     {
+        if (!isPixelVisible(x, y, width2)) return;
         context.fillRect(x - width2, y - width2, width, width);
+    }
+    
+    function isPixelVisible(x, y, width2) {
+        const world = getScreen();
+
+        return !(x < world.llx - width2 - 1 ||
+            x > world.urx + width2 + 1 ||
+            y < world.lly - width2 - 1 ||
+            y > world.ury + width2 + 1);
     }
 
     function drawReferencePixelOnOffScreenCanvas(width, fillStyle) {
@@ -2009,11 +2020,6 @@ function generateTurtleModule(_target) {
         context.fillStyle = this.fill;
         context.fill();
 
-        const pathLength = getPathLength(path);
-        // if drawing lines starts to take too much time, I don't want browser to freeze
-        const maxLengthForCustomLineDrawing = 200000; // empiric value
-        const preferQuality = pathLength < maxLengthForCustomLineDrawing;
-        
         for(i = 1; i < path.length - 1; i++) {
             if (!path[i].stroke) {
                 continue;
@@ -2021,30 +2027,11 @@ function generateTurtleModule(_target) {
 
             context.lineWidth = normalizeWidth(path[i].size * getScreen().lineScale);
 
-            if (preferQuality) {
-                context.fillStyle = path[i].color;
-                drawLineDdaBased(path[i].x, path[i].y, path[i + 1].x, path[i + 1].y, context);
-            } else {
-                context.beginPath();
-                context.moveTo(path[i].x, path[i].y);
-                context.strokeStyle = path[i].color;
-                context.lineTo(path[i + 1].x, path[i + 1].y);
-                context.stroke();
-            }
+            context.fillStyle = path[i].color;
+            drawLineDdaBased(path[i].x, path[i].y, path[i + 1].x, path[i + 1].y, context);
         }
 
         context.restore();
-    }
-    
-    function getPathLength(path) {
-        let dist = 0;
-        for (let i = 0; i < path.length - 1; i ++) {
-            const elem1 = path[i];
-            const elem2 = path[i + 1];
-            dist += Math.sqrt((elem1.x - elem2.x) ** 2 + (elem1.y - elem2.y) ** 2);
-        }
-        
-        return dist;
     }
 
     function partialTranslate(turtle, x, y, beginPath, countAsFrame) {
