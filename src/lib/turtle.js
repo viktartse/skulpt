@@ -1895,15 +1895,27 @@ function generateTurtleModule(_target) {
     function drawLineDdaBased(x1, y1, x2, y2, context) {
         const dx = x2 - x1;
         const dy = y2 - y1;
-        const pixel = drawReferencePixelOnOffScreenCanvas(context.lineWidth, context.fillStyle);
+        const maxSquarePixelSize = 3;
+
 
         const width2 = Math.floor(context.lineWidth / 2);
-        const drawPixelFunc = context.lineWidth > 3 ? drawRoundPixel : drawSquarePixel;
-
+        const drawPixelFunc = context.lineWidth > maxSquarePixelSize ? drawRoundPixel : drawSquarePixel;
+        
+        const screen = getScreen();
+        
         if (Math.abs(dx) > Math.abs(dy)) {
             let intX1 = getPixelNumber(x1);
             let intX2 = getPixelNumber(x2);
             [intX1, intX2] = [Math.min(intX1, intX2), Math.max(intX1, intX2)];
+
+            if (intX2 < screen.llx - width2 || intX1 > screen.urx + width2) return;
+            if (intX1 < screen.llx - width2) intX1 = screen.llx - width2;
+            if (intX2 > screen.urx + width2) intX2 = screen.urx + width2;
+
+            const pixel = context.lineWidth > maxSquarePixelSize
+                ? drawReferencePixelOnOffScreenCanvas(context.lineWidth, context.fillStyle)
+                : undefined;
+            
             for (let x = intX1; x <= intX2; x++) {
                 const t = (x - x1) / dx;
                 const y = getPixelNumber(dy * t + y1);
@@ -1913,6 +1925,15 @@ function generateTurtleModule(_target) {
             let intY1 = getPixelNumber(y1);
             let intY2 = getPixelNumber(y2);
             [intY1, intY2] = [Math.min(intY1, intY2), Math.max(intY1, intY2)];
+
+            if (intY2 < screen.lly - width2 || intY1 > screen.ury + width2) return;
+            if (intY1 < screen.lly - width2) intY1 = screen.lly - width2;
+            if (intY2 > screen.ury + width2) intY2 = screen.ury + width2;
+
+            const pixel = context.lineWidth > maxSquarePixelSize
+                ? drawReferencePixelOnOffScreenCanvas(context.lineWidth, context.fillStyle)
+                : undefined;
+            
             for (let y = intY1; y <= intY2; y++) {
                 const t = (y - y1) / dy;
                 const x = getPixelNumber(dx * t + x1);
@@ -1952,10 +1973,10 @@ function generateTurtleModule(_target) {
     function isPixelVisible(x, y, width2) {
         const world = getScreen();
 
-        return !(x < world.llx - width2 - 1 ||
-            x > world.urx + width2 + 1 ||
-            y < world.lly - width2 - 1 ||
-            y > world.ury + width2 + 1);
+        return !(x < world.llx - width2 ||
+            x > world.urx + width2 ||
+            y < world.lly - width2 ||
+            y > world.ury + width2);
     }
 
     function drawReferencePixelOnOffScreenCanvas(width, fillStyle) {
@@ -2020,7 +2041,8 @@ function generateTurtleModule(_target) {
         context.fillStyle = this.fill;
         context.fill();
 
-        const preferQuality = isQualityDrawingAllowed(path);
+        const startTimestamp = performance.now();
+        let preferQuality = true;
         
         for(i = 1; i < path.length - 1; i++) {
             if (!path[i].stroke) {
@@ -2028,38 +2050,36 @@ function generateTurtleModule(_target) {
             }
 
             context.lineWidth = normalizeWidth(path[i].size * getScreen().lineScale);
+            context.fillStyle = path[i].color;
+            drawLineDdaBased(path[i].x, path[i].y, path[i + 1].x, path[i + 1].y, context);
 
-            if (preferQuality) {
-                context.fillStyle = path[i].color;
-                drawLineDdaBased(path[i].x, path[i].y, path[i + 1].x, path[i + 1].y, context);
-            } else {
-                context.beginPath();
-                context.moveTo(path[i].x, path[i].y);
-                context.strokeStyle = path[i].color;
-                context.lineTo(path[i + 1].x, path[i + 1].y);
-                context.stroke();
+            const endTimestamp = performance.now();
+            // I don't want the user's browser to freeze 
+            if (endTimestamp - startTimestamp > 100) { // this is the max time I'm ok to spend drawing
+                preferQuality = false;
+                break;
             }
+        }
+
+        if (preferQuality) return;
+        
+        // re-draw lines fast
+        for(i = 1; i < path.length - 1; i++) {
+            if (!path[i].stroke) {
+                continue;
+            }
+
+            context.lineWidth = normalizeWidth(path[i].size * getScreen().lineScale);
+            context.beginPath();
+            context.moveTo(path[i].x, path[i].y);
+            context.strokeStyle = path[i].color;
+            context.lineTo(path[i + 1].x, path[i + 1].y);
+            context.stroke();
         }
 
         context.restore();
     }
-
-    function isQualityDrawingAllowed(path) {
-        // if drawing lines starts to take too much time, I don't want browser to freeze
-        const maxLengthForCustomLineDrawing = 4000000; // empiric value
-
-        let dist = 0;
-        for (let i = 0; i < path.length - 1; i ++) {
-            const elem1 = path[i];
-            const elem2 = path[i + 1];
-            dist += Math.sqrt((elem1.x - elem2.x) ** 2 + (elem1.y - elem2.y) ** 2);
-            
-            if (dist > maxLengthForCustomLineDrawing) return false;
-        }
-
-        return true;
-    }
-
+    
     function partialTranslate(turtle, x, y, beginPath, countAsFrame) {
         return function() {
             return turtle.addUpdate(
