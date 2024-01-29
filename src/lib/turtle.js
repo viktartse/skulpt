@@ -1897,16 +1897,13 @@ function generateTurtleModule(_target) {
         const dy = y2 - y1;
         const maxSquarePixelSize = 3;
 
-
         const width2 = Math.floor(context.lineWidth / 2);
         const drawPixelFunc = context.lineWidth > maxSquarePixelSize ? drawRoundPixel : drawSquarePixel;
         
         const screen = getScreen();
         
         if (Math.abs(dx) > Math.abs(dy)) {
-            let intX1 = getPixelNumber(x1);
-            let intX2 = getPixelNumber(x2);
-            [intX1, intX2] = [Math.min(intX1, intX2), Math.max(intX1, intX2)];
+            let [intX1, intX2] = getRoundedOrderedCoord(x1, x2);
 
             if (intX2 < screen.llx - width2 || intX1 > screen.urx + width2) return;
             if (intX1 < screen.llx - width2) intX1 = screen.llx - width2;
@@ -1917,15 +1914,13 @@ function generateTurtleModule(_target) {
                 : undefined;
             
             for (let x = intX1; x <= intX2; x++) {
-                const t = (x - x1) / dx;
+                const t = (x + 0.5 - x1) / dx; // calculate for the middle of the pixel 
                 const y = getPixelNumber(dy * t + y1);
                 drawPixelFunc(x, y, width2, context.lineWidth, context, pixel);
             }
         } else {
-            let intY1 = getPixelNumber(y1);
-            let intY2 = getPixelNumber(y2);
-            [intY1, intY2] = [Math.min(intY1, intY2), Math.max(intY1, intY2)];
-
+            let [intY1, intY2] = getRoundedOrderedCoord(y1, y2);
+            
             if (intY2 < screen.lly - width2 || intY1 > screen.ury + width2) return;
             if (intY1 < screen.lly - width2) intY1 = screen.lly - width2;
             if (intY2 > screen.ury + width2) intY2 = screen.ury + width2;
@@ -1935,13 +1930,22 @@ function generateTurtleModule(_target) {
                 : undefined;
             
             for (let y = intY1; y <= intY2; y++) {
-                const t = (y - y1) / dy;
+                const t = (y + 0.5 - y1) / dy;
                 const x = getPixelNumber(dx * t + x1);
                 drawPixelFunc(x, y, width2, context.lineWidth, context, pixel);
             }
         }
     }
 
+    function getRoundedOrderedCoord(x1, x2) {
+        let intX1, intX2;
+        [intX1, intX2] = [Math.min(x1, x2), Math.max(x1, x2)];
+        intX1 = Math.floor(intX1 + 0.3);
+        intX2 = Math.floor(intX2 - 0.3);
+        if (intX2 < intX1) intX2 = intX1;
+        return [intX1, intX2];
+    }
+    
     function getPixelNumber(n)
     {
         // to be better aligned with the standard "fill" implementation
