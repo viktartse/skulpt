@@ -18,7 +18,7 @@ def s(n):
     left(90)
 
 for i in range(10):
-    s(50 + 1 * 10)
+    s(50 + i * 10)
     s(65.5 + i * 10)
 
 penup()
@@ -36,7 +36,7 @@ setheading(0)
 pendown()
 left(90)
 for i in range(10):
-    s(50 + 1 * 10)
+    s(50 + i * 10)
     s(65.5 + i * 10)
 
 penup()
@@ -45,7 +45,7 @@ setheading(0)
 pendown()
 left(180)
 for i in range(10):
-    s(50 + 1 * 10)
+    s(50 + i * 10)
     s(65.5 + i * 10)
 
 penup();
