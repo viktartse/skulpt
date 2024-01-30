@@ -569,7 +569,7 @@ function generateTurtleModule(_target) {
             this._down       = true;
             this._color      = "black";
             this._fill       = "black";
-            this._size       = 1;
+            this._size       = 2;
             this._filling    = false;
             this._undoBuffer = [];
             this._speed      = 3;
@@ -1965,7 +1965,7 @@ function generateTurtleModule(_target) {
     {
         // to be better aligned with the standard "fill" implementation
         // for canvas
-        return Math.floor(n - 0.01)
+        return Math.floor(n + 0.01)
     }
     
     function normalizeWidth(width) {
