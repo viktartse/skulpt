@@ -1881,15 +1881,30 @@ function generateTurtleModule(_target) {
         context.restore();
     }
 
-    function drawLine(loc) {
+    function drawLine(loc, beginPath) {
         const context = this.context();
 
         if (!context) return;
 
-        context.lineWidth = normalizeWidth(this.size * getScreen().lineScale);
-        context.fillStyle = this.color;
+        context.lineWidth = normalizeWidth(this.size) * getScreen().lineScale;
+        // no scale for the world set
+        if (Math.abs(1 - getScreen().lineScale) < 0.00001) {
+            context.fillStyle = this.color;
+            drawLineDdaBased(this.x, this.y, loc.x, loc.y, context);
+            return;
+        }
 
-        drawLineDdaBased(this.x, this.y, loc.x, loc.y, context);
+        if (beginPath) {
+            context.beginPath();
+            context.moveTo(this.x, this.y);
+        }
+
+        context.strokeStyle = this.color;
+        context.lineTo(loc.x, loc.y);
+        context.stroke();
+        context.stroke();
+        context.stroke();
+        context.stroke();
     }
     
     function drawLineDdaBased(x1, y1, x2, y2, context) {
@@ -1940,8 +1955,8 @@ function generateTurtleModule(_target) {
     function getRoundedOrderedCoord(x1, x2) {
         let intX1, intX2;
         [intX1, intX2] = [Math.min(x1, x2), Math.max(x1, x2)];
-        intX1 = Math.floor(intX1 + 0.3);
-        intX2 = Math.floor(intX2 - 0.3);
+        intX1 = Math.floor(intX1 + 0.2);
+        intX2 = Math.floor(intX2 - 0.2);
         if (intX2 < intX1) intX2 = intX1;
         return [intX1, intX2];
     }
@@ -2053,7 +2068,7 @@ function generateTurtleModule(_target) {
                 continue;
             }
 
-            context.lineWidth = normalizeWidth(path[i].size * getScreen().lineScale);
+            context.lineWidth = normalizeWidth(path[i].size) * getScreen().lineScale;
             context.fillStyle = path[i].color;
             drawLineDdaBased(path[i].x, path[i].y, path[i + 1].x, path[i + 1].y, context);
 
@@ -2073,7 +2088,7 @@ function generateTurtleModule(_target) {
                 continue;
             }
 
-            context.lineWidth = normalizeWidth(path[i].size * getScreen().lineScale);
+            context.lineWidth = normalizeWidth(path[i].size) * getScreen().lineScale;
             context.beginPath();
             context.moveTo(path[i].x, path[i].y);
             context.strokeStyle = path[i].color;
