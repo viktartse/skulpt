@@ -1972,9 +1972,10 @@ function generateTurtleModule(_target) {
         const maxWidth = 1000;
         const minWidth = 1;
 
-        width = Math.round(width);
         width = width > maxWidth ? maxWidth : width;
-        return width < minWidth ? minWidth : width;
+        width = width < minWidth ? minWidth : width;
+        
+        return Math.round(width);
     }
 
     function drawRoundPixel(x, y, width2, width, context, pixel)
