@@ -40,6 +40,7 @@ function generateTurtleModule(_target) {
         _config,
         _anonymousTurtle,
         _mouseHandler,
+        _maxAllowedDistance = 100000,
         _assets;
 
     // Ensure that the turtle DOM target has a tabindex
@@ -673,6 +674,10 @@ function generateTurtleModule(_target) {
         proto.$ycor.returnType = Types.FLOAT;
 
         proto.$forward = proto.$fd = function(distance) {
+            if (distance > _maxAllowedDistance) {
+                throw new Sk.builtin.ValueError("Cannot travel that far: " + distance);
+            }
+            
             pushUndo(this);
             return this.queueMoveBy(this._x, this._y, this._radians, distance);
         };
@@ -700,13 +705,23 @@ function generateTurtleModule(_target) {
         proto.$backward.co_varnames = proto.$back.co_varnames = proto.$bk.co_varnames = ["distance"];
 
         proto.$goto_$rw$ = proto.$setpos = proto.$setposition = function(x,y) {
-            var coords = getCoordinates(x,y);
+            const coords = getCoordinates(x,y);
+
+            if (typeof(coords.x) !== "number" || typeof(coords.y) !== "number") {
+                throw new Sk.builtin.ValueError(`Cannot travel to this point: (${typeof (coords.x)})${coords.x}, (${typeof (coords.y)})${coords.y}`);
+            }
+
+            const dx = coords.x - this._x;
+            const dy = coords.y - this._y;
+            if (Math.abs(dx) > _maxAllowedDistance || Math.abs(dy) > _maxAllowedDistance) {
+                throw new Sk.builtin.ValueError("Cannot travel that far from the current position: " + coords.x + ", " + coords.y);
+            }
 
             pushUndo(this);
 
             return this.translate(
                 this._x, this._y,
-                coords.x - this._x, coords.y - this._y,
+                dx, dy,
                 true
             );
         };
