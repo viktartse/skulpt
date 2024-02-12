@@ -1971,7 +1971,7 @@ function generateTurtleModule(_target) {
         let intX1, intX2;
         [intX1, intX2] = [Math.min(x1, x2), Math.max(x1, x2)];
         intX1 = Math.floor(intX1 + 0.2);
-        intX2 = Math.floor(intX2 - 0.2);
+        intX2 = Math.floor(intX2);
         if (intX2 < intX1) intX2 = intX1;
         return [intX1, intX2];
     }
