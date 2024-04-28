@@ -1944,7 +1944,7 @@ function generateTurtleModule(_target) {
                 : undefined;
             
             for (let x = intX1; x <= intX2; x++) {
-                const t = (x + 0.5 - x1) / dx; // calculate for the middle of the pixel 
+                const t = (x - x1) / dx;
                 const y = getPixelNumber(dy * t + y1);
                 drawPixelFunc(x, y, width2, context.lineWidth, context, pixel);
             }
@@ -1960,7 +1960,7 @@ function generateTurtleModule(_target) {
                 : undefined;
             
             for (let y = intY1; y <= intY2; y++) {
-                const t = (y + 0.5 - y1) / dy;
+                const t = (y - y1) / dy;
                 const x = getPixelNumber(dx * t + x1);
                 drawPixelFunc(x, y, width2, context.lineWidth, context, pixel);
             }
