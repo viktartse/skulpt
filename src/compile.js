@@ -1409,17 +1409,24 @@ Compiler.prototype.cwhile = function (s) {
         next = this.newBlock("after while");
         orelse = s.orelse.length > 0 ? this.newBlock("while orelse") : null;
         body = this.newBlock("while body");
-
+        const debug = this.canCreateDebugBlock()
+            ? this.newBlock("Pre post loop debug breakpoint for line "+s.lineno)
+            : null;
+        
         this.annotateSource(s);
         this._jumpfalse(this.vexpr(s.test), orelse ? orelse : next);
         this._jump(body);
 
         this.pushBreakBlock(next);
-        this.pushContinueBlock(top);
+        this.pushContinueBlock(debug ? debug : top);
 
         this.setBlock(body);
 
         this.vseqstmt(s.body);
+
+        if (this.canCreateDebugBlock()) {
+            this.setDebugBlock(s, debug);
+        }
 
         this._jump(top);
 
@@ -1436,6 +1443,28 @@ Compiler.prototype.cwhile = function (s) {
     }
 };
 
+Compiler.prototype.canCreateDebugBlock = function() {
+    return Sk.debugging && this.u.canSuspend;
+}
+
+Compiler.prototype.setDebugBlock = function (s, preDebug) {
+    this._jump(preDebug);
+    this.setBlock(preDebug);
+
+    const debugBlock = this.newBlock("post loop debug breakpoint for line "+s.lineno)
+
+    out("if (Sk.breakpoints('"+this.filename+"',"+s.lineno+","+s.col_offset+")) {",
+        "var $susp = $saveSuspension({data: {type: 'Sk.debug'}, resume: function() {}}, '"+this.filename+"',"+s.lineno+","+s.col_offset+");",
+        "$susp.$blk = " + debugBlock + ";",
+        "$susp.optional = true;",
+        "$susp.hello = true;",
+        "return $susp;",
+        "}");
+    this._jump(debugBlock);
+    this.setBlock(debugBlock);
+    this.u.doesSuspend = true;
+}
+
 Compiler.prototype.cfor = function (s) {
     var target;
     var nexti;
@@ -1444,9 +1473,12 @@ Compiler.prototype.cfor = function (s) {
     var start = this.newBlock("for start");
     var cleanup = this.newBlock("for cleanup");
     var end = this.newBlock("for end");
-
+    const debug = this.canCreateDebugBlock()
+        ? this.newBlock("Pre post loop debug breakpoint for line "+s.lineno)
+        : null;
+    
     this.pushBreakBlock(end);
-    this.pushContinueBlock(start);
+    this.pushContinueBlock(debug ? debug : start);
 
     // get the iterator
     toiter = this.vexpr(s.iter);
@@ -1489,6 +1521,10 @@ Compiler.prototype.cfor = function (s) {
 
     // execute body
     this.vseqstmt(s.body);
+
+    if (this.canCreateDebugBlock()) {
+        this.setDebugBlock(s, debug);
+    }
 
     // jump to top of loop
     this._jump(start);
