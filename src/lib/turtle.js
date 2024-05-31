@@ -1952,7 +1952,7 @@ function generateTurtleModule(_target) {
             }
         } else {
             let [intY1, intY2] = getRoundedOrderedCoord(y1, y2);
-            
+
             if (intY2 < screen.lly - width2 || intY1 > screen.ury + width2) return;
             if (intY1 < screen.lly - width2) intY1 = screen.lly - width2;
             if (intY2 > screen.ury + width2) intY2 = screen.ury + width2;
@@ -1972,7 +1972,7 @@ function generateTurtleModule(_target) {
     function getRoundedOrderedCoord(x1, x2) {
         let intX1, intX2;
         [intX1, intX2] = [Math.min(x1, x2), Math.max(x1, x2)];
-        intX1 = Math.floor(intX1 + 0.2);
+        intX1 = Math.floor(intX1 + 0.3);
         intX2 = Math.floor(intX2);
         if (intX2 < intX1) intX2 = intX1;
         return [intX1, intX2];
