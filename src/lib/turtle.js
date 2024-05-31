@@ -1931,8 +1931,10 @@ function generateTurtleModule(_target) {
         const drawPixelFunc = context.lineWidth > maxSquarePixelSize ? drawRoundPixel : drawSquarePixel;
         
         const screen = getScreen();
-        
-        if (Math.abs(dx) > Math.abs(dy)) {
+
+        // compare with some epsilon so that for a line with angle of 45 there is no 
+        // jumping between branches for different chunks of the line
+        if (Math.abs(dx) - Math.abs(dy) > 0.00000000001) {
             let [intX1, intX2] = getRoundedOrderedCoord(x1, x2);
 
             if (intX2 < screen.llx - width2 || intX1 > screen.urx + width2) return;
