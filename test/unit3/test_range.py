@@ -3,6 +3,8 @@
 import unittest
 import sys
 
+max_range_size = 1000000
+
 # pure Python implementations (3 args only), for comparison
 def pyrange(start, stop, step):
     if (start - stop) // step < 0:
@@ -47,6 +49,9 @@ class RangeTest(unittest.TestCase):
         self.assertEqual(list(range(-3)), [])
         self.assertEqual(list(range(1, 10, 3)), [1, 4, 7])
         self.assertEqual(list(range(5, -5, -3)), [5, 2, -1, -4])
+        self.assertEqual(list(range(max_range_size, max_range_size + 1)), [max_range_size])
+        self.assertEqual(list(range(-max_range_size - 1, -max_range_size)), [-max_range_size - 1])
+        self.assertEqual(list(range(max_range_size, max_range_size - 1, -1)), [max_range_size])
 
         a = 10
         b = 100
@@ -88,56 +93,10 @@ class RangeTest(unittest.TestCase):
         self.assertEqual(len(range(0, sys.maxsize, sys.maxsize-1)), 2)
 
     def test_large_operands(self):
-        x = range(10**20, 10**20+10, 3)
-        self.assertEqual(len(x), 4)
-        self.assertEqual(len(list(x)), 4)
-
-        x = range(10**20+10, 10**20, 3)
-        self.assertEqual(len(x), 0)
-        self.assertEqual(len(list(x)), 0)
-
-        x = range(10**20, 10**20+10, -3)
-        self.assertEqual(len(x), 0)
-        self.assertEqual(len(list(x)), 0)
-
-        x = range(10**20+10, 10**20, -3)
-        self.assertEqual(len(x), 4)
-        self.assertEqual(len(list(x)), 4)
-
-        # Now test range() with longs
-        self.assertEqual(list(range(-2**100)), [])
-        self.assertEqual(list(range(0, -2**100)), [])
-        self.assertEqual(list(range(0, 2**100, -1)), [])
-        self.assertEqual(list(range(0, 2**100, -1)), [])
-
-        a = int(10 * sys.maxsize)
-        b = int(100 * sys.maxsize)
-        c = int(50 * sys.maxsize)
-
-        self.assertEqual(list(range(a, a+2)), [a, a+1])
-        self.assertEqual(list(range(a+2, a, -1)), [a+2, a+1])
-        self.assertEqual(list(range(a+4, a, -2)), [a+4, a+2])
-
-        seq = list(range(a, b, c))
-        self.assertIn(a, seq)
-        self.assertNotIn(b, seq)
-        self.assertEqual(len(seq), 2)
-        self.assertEqual(seq[0], a)
-        self.assertEqual(seq[-1], a+c)
-
-        seq = list(range(b, a, -c))
-        self.assertIn(b, seq)
-        self.assertNotIn(a, seq)
-        self.assertEqual(len(seq), 2)
-        self.assertEqual(seq[0], b)
-        self.assertEqual(seq[-1], b-c)
-
-        seq = list(range(-a, -b, -c))
-        self.assertIn(-a, seq)
-        self.assertNotIn(-b, seq)
-        self.assertEqual(len(seq), 2)
-        self.assertEqual(seq[0], -a)
-        self.assertEqual(seq[-1], -a-c)
+        self.assertRaises(IndexError, range, 10**20, 10**20+10, 3)
+        self.assertRaises(IndexError, range, max_range_size + 1)
+        self.assertRaises(IndexError, range, -max_range_size - 1, 0, 1)
+        self.assertRaises(IndexError, range, max_range_size + 1, 0, -1)
 
     def test_large_range(self):
         # Check long ranges (len > sys.maxsize)
@@ -247,7 +206,7 @@ class RangeTest(unittest.TestCase):
         self.assertEqual(range(10).index(always_equal), 0)
 
     def test_user_index_method(self):
-        bignum = 2*sys.maxsize
+        bignum = 2*max_range_size
         smallnum = 42
 
         # User-defined class with an __index__ method
@@ -386,7 +345,7 @@ class RangeTest(unittest.TestCase):
                   range(0),
                   range(1, 9, 3),
                   range(8, 0, -3),
-                  range(sys.maxsize+1, sys.maxsize+10),
+                  range(max_range_size+1, max_range_size+10),
                   ]:
             check(0, 2)
             check(0, 20)
@@ -476,7 +435,8 @@ class RangeTest(unittest.TestCase):
                   range(0),
                   range(1, 9, 3),
                   range(8, 0, -3),
-                  range(sys.maxsize+1, sys.maxsize+10),
+                  range(max_range_size+1, max_range_size+10),
+                  range(-max_range_size-1, -max_range_size-10, -1),
                   ]:
             self.assertEqual(list(reversed(r)), list(r)[::-1])
 

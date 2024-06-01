@@ -168,15 +168,19 @@ function rangeFromPy(start, stop, step) {
         throw new Sk.builtin.ValueError("range() step argument must not be zero");
     }
     const ret = [];
+    const maxRangeLen = 1000000;
     if (typeof start === "number" && typeof stop === "number" && typeof step === "number") {
-        if ((stop - start) / step > 1000000) {
-            throw new Sk.builtin.IndexError("range object is too big");
-        }
         if (step > 0) {
+            if (stop > start && (stop - start) / step > maxRangeLen) {
+                throw new Sk.builtin.IndexError("range object is too big");
+            }
             for (let i = start; i < stop; i += step) {
                 ret.push(new Sk.builtin.int_(i));
             }
         } else {
+            if (stop < start && (stop - start) / step > maxRangeLen) {
+                throw new Sk.builtin.IndexError("range object is too big");
+            }
             for (let i = start; i > stop; i += step) {
                 ret.push(new Sk.builtin.int_(i));
             }
