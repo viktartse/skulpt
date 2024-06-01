@@ -169,6 +169,9 @@ function rangeFromPy(start, stop, step) {
     }
     const ret = [];
     if (typeof start === "number" && typeof stop === "number" && typeof step === "number") {
+        if ((stop - start) / step > 1000000) {
+            throw new Sk.builtin.IndexError("range object is too big");
+        }
         if (step > 0) {
             for (let i = start; i < stop; i += step) {
                 ret.push(new Sk.builtin.int_(i));
@@ -179,6 +182,7 @@ function rangeFromPy(start, stop, step) {
             }
         }
     } else {
+        throw new Sk.builtin.IndexError("range object is too big");
         // This is going to be slow
         let i;
         start = i = JSBI.BigInt(start);
