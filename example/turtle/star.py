@@ -1,6 +1,16 @@
 from turtle import *
-
+width(1)
 speed(0)
+ht()
+
+color('black')
+
+fillcolor('red')
+begin_fill()
+circle(40)
+end_fill()
+
+
 penup()
 goto(0, 40)
 pendown()
