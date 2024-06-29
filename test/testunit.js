@@ -30,6 +30,7 @@ function test (python3, opt, module = undefined) {
     // Configure Skulpt to run unit tests
     Sk.configure({
         syspath: [dir],
+        robot: getRobotImpl(),
         read: (fname) => { return fs.readFileSync(fname, "utf8"); },
         output: (args) => { Sk.buf += args; },
         __future__: pyver
@@ -114,6 +115,20 @@ function test (python3, opt, module = undefined) {
     }
 
     runtest(modules, 0, 0);
+}
+
+function getRobotImpl() {
+    let lastCall;
+    return {
+        move: direction => lastCall = "move_" + direction,
+        isWallFrom: direction => {lastCall = "isWallFrom_" + direction; return true;},
+        isFreeFrom: direction => {lastCall = "isFreeFrom_" + direction; return true;},
+        paint: () => lastCall = "paint",
+        isCellPainted: () => {lastCall = "isCellPainted"; return true;},
+        getPollutionLevel: () => {lastCall = "getPollutionLevel"; return 1;},
+        printNumber: (num) => lastCall = "printNumber_" + num,
+        getLastCall: () => lastCall
+    }
 }
 
 program

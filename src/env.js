@@ -231,7 +231,7 @@ Sk.checkRobot = function(robotImplementation) {
     }
 
     if (typeof robotImplementation != "object") {
-        throw "Robot. Robot implementation must be an object";
+        throw new Error("Robot. Robot implementation must be an object");
     }
 
     checkRobotMethod("move");
@@ -244,7 +244,7 @@ Sk.checkRobot = function(robotImplementation) {
 
     function checkRobotMethod(method) {
         if (typeof robotImplementation[method] != "function") {
-            throw "Robot. No method '" + method + "' found";
+            throw new Error("Robot. No method '" + method + "' found");
         }
     }
 };

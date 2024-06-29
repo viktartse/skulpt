@@ -23,7 +23,7 @@ var $builtinmodule = function() {
         }));
     }
 
-    return {
+    const module =  {
         speed: new Sk.builtin.func((...args) => {
             Sk.builtin.pyCheckArgsLen("speed", args.length, 1, 1);
             Sk.builtin.pyCheckType("number", "integer", Sk.builtin.checkInt(args[0]));
@@ -64,46 +64,50 @@ var $builtinmodule = function() {
             Sk.builtin.pyCheckArgsLen("is_cell_painted", args.length, 0, 0);
             return Sk.ffi.remapToPy(Sk.robot.isCellPainted());
         }),
+        is_cell_not_painted: new Sk.builtin.func((...args) => {
+            Sk.builtin.pyCheckArgsLen("is_cell_not_painted", args.length, 0, 0);
+            return Sk.ffi.remapToPy(!Sk.robot.isCellPainted());
+        }),
 
 
-        is_wall_to_right: new Sk.builtin.func((...args) => {
-            Sk.builtin.pyCheckArgsLen("is_wall_to_right", args.length, 0, 0);
+        is_wall_right: new Sk.builtin.func((...args) => {
+            Sk.builtin.pyCheckArgsLen("is_wall_right", args.length, 0, 0);
             return Sk.ffi.remapToPy(Sk.robot.isWallFrom('right'));
         }),
-        is_wall_to_left: new Sk.builtin.func((...args) => {
-            Sk.builtin.pyCheckArgsLen("is_wall_to_left", args.length, 0, 0);
+        is_wall_left: new Sk.builtin.func((...args) => {
+            Sk.builtin.pyCheckArgsLen("is_wall_left", args.length, 0, 0);
             return Sk.ffi.remapToPy(Sk.robot.isWallFrom('left'));
         }),
-        is_wall_above: new Sk.builtin.func((...args) => {
-            Sk.builtin.pyCheckArgsLen("is_wall_above", args.length, 0, 0);
+        is_wall_up: new Sk.builtin.func((...args) => {
+            Sk.builtin.pyCheckArgsLen("is_wall_up", args.length, 0, 0);
             return Sk.ffi.remapToPy(Sk.robot.isWallFrom('up'));
         }),
-        is_wall_below: new Sk.builtin.func((...args) => {
-            Sk.builtin.pyCheckArgsLen("is_wall_below", args.length, 0, 0);
+        is_wall_down: new Sk.builtin.func((...args) => {
+            Sk.builtin.pyCheckArgsLen("is_wall_down", args.length, 0, 0);
             return Sk.ffi.remapToPy(Sk.robot.isWallFrom('down'));
         }),
         
         
-        is_open_to_right: new Sk.builtin.func((...args) => {
-            Sk.builtin.pyCheckArgsLen("is_open_to_right", args.length, 0, 0);
+        is_free_right: new Sk.builtin.func((...args) => {
+            Sk.builtin.pyCheckArgsLen("is_free_right", args.length, 0, 0);
             return Sk.ffi.remapToPy(Sk.robot.isFreeFrom('right'));
         }),
-        is_open_to_left: new Sk.builtin.func((...args) => {
-            Sk.builtin.pyCheckArgsLen("is_open_to_left", args.length, 0, 0);
+        is_free_left: new Sk.builtin.func((...args) => {
+            Sk.builtin.pyCheckArgsLen("is_free_left", args.length, 0, 0);
             return Sk.ffi.remapToPy(Sk.robot.isFreeFrom('left'));
         }),
-        is_open_above: new Sk.builtin.func((...args) => {
-            Sk.builtin.pyCheckArgsLen("is_open_above", args.length, 0, 0);
+        is_free_up: new Sk.builtin.func((...args) => {
+            Sk.builtin.pyCheckArgsLen("is_free_up", args.length, 0, 0);
             return Sk.ffi.remapToPy(Sk.robot.isFreeFrom('up'));
         }),
-        is_open_below: new Sk.builtin.func((...args) => {
-            Sk.builtin.pyCheckArgsLen("is_open_below", args.length, 0, 0);
+        is_free_down: new Sk.builtin.func((...args) => {
+            Sk.builtin.pyCheckArgsLen("is_free_down", args.length, 0, 0);
             return Sk.ffi.remapToPy(Sk.robot.isFreeFrom('down'));
         }),
 
 
-        pollution_level: new Sk.builtin.func((...args) => {
-            Sk.builtin.pyCheckArgsLen("pollution_level", args.length, 0, 0);
+        pollution: new Sk.builtin.func((...args) => {
+            Sk.builtin.pyCheckArgsLen("pollution", args.length, 0, 0);
             return Sk.ffi.remapToPy(Sk.robot.getPollutionLevel());
         }),
 
@@ -115,4 +119,33 @@ var $builtinmodule = function() {
             return delay();
         }),
     };
+    
+    // add synonyms
+    module.mr = module.move_right;
+    module.ml = module.move_left;
+    module.mu = module.move_up;
+    module.md = module.move_down;
+    
+    module.iscp = module.is_cell_painted;
+    module.iscnp = module.is_cell_not_painted;
+
+    module.iswr = module.is_wall_right;
+    module.iswl = module.is_wall_left;
+    module.iswu = module.is_wall_up;
+    module.iswd = module.is_wall_down;
+
+    module.isfr = module.is_free_right;
+    module.isfl = module.is_free_left;
+    module.isfu = module.is_free_up;
+    module.isfd = module.is_free_down;
+
+    module.pol = module.pollution;
+    module.printn = module.print_number;
+    
+    // it needs if we run tests to find out what method was called on the robot implementation
+    if (Sk.robot.getLastCall) {
+        module.last_call = () => {return Sk.ffi.remapToPy(Sk.robot.getLastCall())};
+    }
+    
+    return module;
 };
