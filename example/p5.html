@@ -11,23 +11,29 @@ from p5 import *
 import math
 
 def setup():
-    create_canvas(500, 400)
+  create_canvas(500, 400, WEBGL)
+  background(200);
+    
+  begin_shape(TESS);
+
+  vertex(-30, -30, 0);
+  vertex(30, -30, 0);
+  vertex(30, -10, 0);
+  vertex(-10, -10, 0);
+  vertex(-10, 10, 0);
+  vertex(30, 10, 0);
+  vertex(30, 30, 0);
+  vertex(-30, 30, 0);
+
+  end_shape(CLOSE);
 
 i = 0
 direction = 1
     
-def draw():
-  background(0);
+#def draw():
+  #background(100);
 
-  no_stroke();
-  fill(255, 255, 0);
-
-  # Update start and stop angles.
-  biteSize = PI / 16;
-  startAngle = biteSize * math.sin(frame_count() * 0.1) + biteSize;
-  endAngle = TWO_PI - startAngle;
-    
-  arc(50, 50, 80, 80, startAngle, endAngle, PIE);
+  #quad(20, 50, 80, 30, 80, 70, 20, 70);
     
 run()
 
