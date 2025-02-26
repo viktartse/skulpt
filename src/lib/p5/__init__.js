@@ -34,8 +34,9 @@ var $builtinmodule = function() {
             args = args.slice(0, requiredSize);
 
         if (args.length < requiredSize) {
-            const additionalItems = [].fill(null);
-            args.push(...additionalItems);
+            for (let i = 0; i < requiredSize - args.length; i++) {
+                args.push(null);
+            }
         }
 
         return args.map(a => Sk.ffi.remapToPy(a));
