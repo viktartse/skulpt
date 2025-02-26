@@ -11,31 +11,25 @@ from p5 import *
 import math
 
 def setup():
-  create_canvas(500, 400, WEBGL)
-  background(200);
-    
-  begin_shape(TESS);
+    create_canvas(500, 400)
+    cursor(HAND)
+    background(200);
 
-  vertex(-30, -30, 0);
-  vertex(30, -30, 0);
-  vertex(30, -10, 0);
-  vertex(-10, -10, 0);
-  vertex(-10, 10, 0);
-  vertex(30, 10, 0);
-  vertex(30, 30, 0);
-  vertex(-30, 30, 0);
-
-  end_shape(CLOSE);
 
 i = 0
 direction = 1
     
-#def draw():
+def draw():
+  pass
+  #print(frame_count())
   #background(100);
 
   #quad(20, 50, 80, 30, 80, 70, 20, 70);
+
     
-run()
+def windowResized(param):
+    print(param.type)
+
 
 </textarea>
 

@@ -7,40 +7,49 @@
 var $builtinmodule = function() {
     "use strict";
 
-    let p5ref = null;
-
-    // Content will be later. Reference need in "run" now
-    const module = {};
-    
     // create p5 reference
-    function run() {
-        const sketch = p => {
-            p.setup = function() {
-                const setupFunction = Sk.globals["setup"];
-                if (setupFunction) {
-                    Sk.misceval.callsimArray(setupFunction)
-                }
-            };
+    const sketch = p => {
+        p.setup = () => {
+            const setupFunction = Sk.globals["setup"];
+            if (setupFunction) Sk.misceval.callsimArray(setupFunction);
+        }
 
-            p.draw = function() {
-                const drawFunction = Sk.globals["draw"];
+        p.draw = () => {
+            const drawFunction = Sk.globals["draw"];
+            if (drawFunction) Sk.misceval.callsimArray(drawFunction)
+        }
 
-                if (drawFunction) {
-                    Sk.misceval.callsimArray(drawFunction)
-                }
-            };
-        };
-        
-        p5ref = new p5(sketch);
-        checkConstants(module, p5ref);
+        p.windowResized = (...args) => {
+            const windowResized = Sk.globals["windowResized"];
+            if (windowResized) {
+                Sk.misceval.callsimArray(windowResized, sliceOrAdd(args, windowResized.co_argcount))
+            }
+        }
+    };
+    
+    const p5ref = new p5(sketch);
+    
+    function sliceOrAdd(args, requiredSize) {
+        if (args.length > requiredSize)
+            args = args.slice(0, requiredSize);
+
+        if (args.length < requiredSize) {
+            const additionalItems = [].fill(null);
+            args.push(...additionalItems);
+        }
+
+        return args.map(a => Sk.ffi.remapToPy(a));
     }
-
+    
     function toJs(v) {
         return Sk.ffi.remapToJs(v);
     }
     function checkConstants(module, p5)
     {
         const eps = 0.00001;
+
+        assert(p5.HSB, toJs(module.HSB));
+        
         assert(Math.abs(p5.PI - toJs(module.PI)) < eps, true);
         assert(Math.abs(p5.QUARTER_PI - toJs(module.QUARTER_PI)) < eps, true);
         assert(Math.abs(p5.TWO_PI - toJs(module.TWO_PI)) < eps, true);
@@ -76,40 +85,47 @@ var $builtinmodule = function() {
         assert(p5.TESS, toJs(module.TESS));
 
         assert(p5.CLOSE, toJs(module.CLOSE));
+
+        assert(p5.ARROW, toJs(module.ARROW));
+        assert(p5.CROSS, toJs(module.CROSS));
+        assert(p5.HAND, toJs(module.HAND));
+        assert(p5.MOVE, toJs(module.MOVE));
+        assert(p5.TEXT, toJs(module.TEXT));
+        assert(p5.WAIT, toJs(module.WAIT));
     }
     
     function assert(expected, actual) {
         if (actual !== expected) 
             throw Error(`Expected '${expected} of type '${typeof expected}' but found '${actual}' of type '${typeof actual}'`);
     }
-    
-    function getFrameCount() {
-        throwIfNoP5Reference();
-        return Sk.ffi.remapToPy(p5ref.frameCount);
-    }
 
     function throwIfNoP5Reference() {
         if (!p5ref) throw new Error("NoP5RefCreated");
     }
 
+    function varToPyFunc(varGetter) {
+        return new Sk.builtin.func(() => {
+            throwIfNoP5Reference();
+            return Sk.ffi.remapToPy(varGetter());
+        });
+    }
+
     function remapToJsAndCall(actionGetter, args) {
         throwIfNoP5Reference();
-
         const jsArgs = args.map(a => Sk.ffi.remapToJs(a));
-        actionGetter().apply(p5ref, jsArgs);
+        return Sk.ffi.remapToPy(actionGetter().apply(p5ref, jsArgs));
     }
     
     function funcToPy(actionGetter) {
         return new Sk.builtin.func((...args) => remapToJsAndCall(actionGetter, args))
     }
     
-    const moduleContent =  {
+    const module =  {
         __name__: new Sk.builtin.str("p5"),
-
-        run: new Sk.builtin.func(run),
 
         create_canvas: funcToPy(() => p5ref.createCanvas),
 
+        // Shape. 2D Primitives
         arc: funcToPy(() => p5ref.arc),
         circle: funcToPy(() => p5ref.circle),
         ellipse: funcToPy(() => p5ref.ellipse),
@@ -120,6 +136,7 @@ var $builtinmodule = function() {
         square: funcToPy(() => p5ref.square),
         triangle: funcToPy(() => p5ref.triangle),
 
+        // Shape. Attributes
         ellipse_mode: funcToPy(() => p5ref.ellipseMode),
         no_smooth: funcToPy(() => p5ref.noSmooth),
         rect_mode: funcToPy(() => p5ref.rectMode),
@@ -128,24 +145,64 @@ var $builtinmodule = function() {
         stroke_join: funcToPy(() => p5ref.strokeJoin),
         stroke_weight: funcToPy(() => p5ref.strokeWeight),
 
+        // Shape. Vertex. Not done
+        begin_shape: funcToPy(() => p5ref.beginShape),
+        end_shape: funcToPy(() => p5ref.endShape),
+        vertex: funcToPy(() => p5ref.vertex),
+        
+        // Color. Creating & Reading
+        alpha: funcToPy(() => p5ref.alpha),
+        blue: funcToPy(() => p5ref.blue),
+        brightness: funcToPy(() => p5ref.brightness),
+        color: funcToPy(() => p5ref.color),
+        green: funcToPy(() => p5ref.green),
+        hue: funcToPy(() => p5ref.hue),
+        lerp_color: funcToPy(() => p5ref.lerpColor),
+        lightness: funcToPy(() => p5ref.lightness),
+        palette_lerp: funcToPy(() => p5ref.paletteLerp),
+        red: funcToPy(() => p5ref.red),
+        saturation: funcToPy(() => p5ref.saturation),
+        
+        // Color. Setting. Not done
         background: funcToPy(() => p5ref.background),
+        color_mode: funcToPy(() => p5ref.colorMode),
         stroke: funcToPy(() => p5ref.stroke),
         fill: funcToPy(() => p5ref.fill),
         no_stroke: funcToPy(() => p5ref.noStroke),
         no_fill: funcToPy(() => p5ref.noFill),
-        
-        begin_shape: funcToPy(() => p5ref.beginShape),
-        end_shape: funcToPy(() => p5ref.endShape),
-        vertex: funcToPy(() => p5ref.vertex),
 
+        // Environment. Not done
+        cursor: funcToPy(() => p5ref.cursor),
+        delta_time: varToPyFunc(() => p5ref.deltaTime),
         describe: funcToPy(() => p5ref.describe),
-
-        frame_count: new Sk.builtin.func(getFrameCount),
-
+        describe_element: funcToPy(() => p5ref.describeElement),
+        display_density: funcToPy(() => p5ref.displayDensity),
+        display_height: varToPyFunc(() => p5ref.displayHeight),
+        display_width: varToPyFunc(() => p5ref.displayWidth),
+        focused: varToPyFunc(() => p5ref.focused),
+        frame_count: varToPyFunc(() => p5ref.frameCount),
+        frame_rate: funcToPy(() => p5ref.frameRate),
+        fullscreen: funcToPy(() => p5ref.fullscreen),
+        get_target_frame_rate: funcToPy(() => p5ref.getTargetFrameRate),
+        get_url: funcToPy(() => p5ref.getURL),
+        get_url_params: funcToPy(() => p5ref.getURLParams),
+        get_url_path: funcToPy(() => p5ref.getURLPath),
+        grid_output: funcToPy(() => p5ref.gridOutput),
+        height: varToPyFunc(() => p5ref.height),
+        no_cursor: funcToPy(() => p5ref.noCursor),
+        pixel_density: funcToPy(() => p5ref.pixelDensity),
+        // print: funcToPy(() => p5ref.print), already have "print" from standard python
+        text_output: funcToPy(() => p5ref.textOutput),
+        webgl_version: varToPyFunc(() => p5ref.webglVersion),
+        width: varToPyFunc(() => p5ref.width),
+        window_height: varToPyFunc(() => p5ref.windowHeight),
+        window_width: varToPyFunc(() => p5ref.windowWidth),
+        
+        // Constants. Not done
+        HSB: new Sk.builtin.str("hsb"),
         PI: new Sk.builtin.float_(Math.PI),
         QUARTER_PI: new Sk.builtin.float_(Math.PI / 4),
         TWO_PI: new Sk.builtin.float_(Math.PI * 2),
-
         WEBGL: new Sk.builtin.str("webgl"),
 
         LABEL: new Sk.builtin.str("label"),
@@ -177,9 +234,16 @@ var $builtinmodule = function() {
         TESS: new Sk.builtin.str("tess"),
 
         CLOSE: new Sk.builtin.str("close"),
+
+        ARROW: new Sk.builtin.str("default"),
+        CROSS: new Sk.builtin.str("crosshair"),
+        HAND: new Sk.builtin.str("pointer"),
+        MOVE: new Sk.builtin.str("move"),
+        TEXT: new Sk.builtin.str("text"),
+        WAIT: new Sk.builtin.str("wait"),
     };
 
-    Object.assign(module, moduleContent);
+    checkConstants(module, p5ref);
 
     return module;
 };
