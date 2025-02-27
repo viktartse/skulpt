@@ -111,9 +111,17 @@ var $builtinmodule = function() {
         });
     }
 
+    function processUnhandledHook(fn) {
+        if (fn && fn.tp$call) {
+            return function (...args) {
+                Sk.misceval.callsimArray(fn, sliceOrAdd(args, fn.co_argcount))
+            };
+        }
+    }
+    
     function remapToJsAndCall(actionGetter, args) {
         throwIfNoP5Reference();
-        const jsArgs = args.map(a => Sk.ffi.remapToJs(a));
+        const jsArgs = args.map(a => Sk.ffi.remapToJs(a, { unhandledHook: processUnhandledHook }));
         return Sk.ffi.remapToPy(actionGetter().apply(p5ref, jsArgs));
     }
     
@@ -146,9 +154,15 @@ var $builtinmodule = function() {
         stroke_join: funcToPy(() => p5ref.strokeJoin),
         stroke_weight: funcToPy(() => p5ref.strokeWeight),
 
-        // Shape. Vertex. Not done
+        // Shape. Vertex
+        begin_contour: funcToPy(() => p5ref.beginContour),
         begin_shape: funcToPy(() => p5ref.beginShape),
+        bezier_vertex: funcToPy(() => p5ref.bezierVertex),
+        curve_vertex: funcToPy(() => p5ref.curveVertex),
+        end_contour: funcToPy(() => p5ref.endContour),
         end_shape: funcToPy(() => p5ref.endShape),
+        normal: funcToPy(() => p5ref.normal),
+        quadratic_vertex: funcToPy(() => p5ref.quadraticVertex),
         vertex: funcToPy(() => p5ref.vertex),
         
         // Color. Creating & Reading
@@ -164,15 +178,21 @@ var $builtinmodule = function() {
         red: funcToPy(() => p5ref.red),
         saturation: funcToPy(() => p5ref.saturation),
         
-        // Color. Setting. Not done
+        // Color. Setting
         background: funcToPy(() => p5ref.background),
+        begin_clip: funcToPy(() => p5ref.beginClip),
+        clear: funcToPy(() => p5ref.clear),
+        clip: funcToPy(() => p5ref.clip),
         color_mode: funcToPy(() => p5ref.colorMode),
-        stroke: funcToPy(() => p5ref.stroke),
+        end_clip: funcToPy(() => p5ref.endClip),
+        erase: funcToPy(() => p5ref.erase),
         fill: funcToPy(() => p5ref.fill),
-        no_stroke: funcToPy(() => p5ref.noStroke),
+        no_erase: funcToPy(() => p5ref.noErase),
         no_fill: funcToPy(() => p5ref.noFill),
+        no_stroke: funcToPy(() => p5ref.noStroke),
+        stroke: funcToPy(() => p5ref.stroke),
 
-        // Environment. Not done
+        // Environment
         cursor: funcToPy(() => p5ref.cursor),
         delta_time: varToPyFunc(() => p5ref.deltaTime),
         describe: funcToPy(() => p5ref.describe),
@@ -198,6 +218,12 @@ var $builtinmodule = function() {
         width: varToPyFunc(() => p5ref.width),
         window_height: varToPyFunc(() => p5ref.windowHeight),
         window_width: varToPyFunc(() => p5ref.windowWidth),
+        
+        // 3D. Interaction. Not done
+        orbit_control: funcToPy(() => p5ref.orbitControl),
+        
+        // 3D Material. Not done
+        normal_material: funcToPy(() => p5ref.normalMaterial),
         
         // Constants. Not done
         HSB: new Sk.builtin.str("hsb"),

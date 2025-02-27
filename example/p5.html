@@ -8,27 +8,32 @@
 <body>
 <textarea id="code" rows="24" cols="80">
 from p5 import *
-import math
 
 def setup():
-    create_canvas(500, 400)
-    cursor(HAND)
-    background(200);
+  create_canvas(500, 500, WEBGL)
 
 
 i = 0
-direction = 1
     
 def draw():
-  pass
-  #print(frame_count())
-  #background(100);
+  global i
+  if i % 100 == 0: print(frame_rate())
+  i += 1
 
-  #quad(20, 50, 80, 30, 80, 70, 20, 70);
+  background(200);
 
-    
-def windowResized(param, p2):
-    print(param.type, p2)
+
+  begin_shape();
+  curve_vertex(32, 91);
+  curve_vertex(32, 91);
+
+  curve_vertex(21, 17);
+  curve_vertex(68, 19);
+
+  curve_vertex(84, 91);
+  curve_vertex(84, 91);
+
+  end_shape();
 
 
 </textarea>
