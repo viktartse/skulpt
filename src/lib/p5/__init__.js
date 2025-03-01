@@ -1,375 +1,129 @@
-/*
- *  __author__: Viktar Tserashchuk
- *
- *  Implementation of the Python p5 module.
- */
+function $builtinmodule() {
+    const {
+        builtins: __builtins__,
+        builtin: {
+            str: pyStr,
+            func: pyFunc,
+            none: { none$: pyNone },
+        },
+        misceval: { callsimArray: pyCall },
+        ffi: { toPy },
+    } = Sk;
 
-var $builtinmodule = function() {
-    "use strict";
+    // setup a p5 object on Sk if not already there
+    Sk.p5 || (Sk.p5 = {});
 
-    let p5ref = null;
-    
-    const sketch = p => {
-        const setupFunction = Sk.globals["setup"];
-        if (setupFunction) {
-            p.setup = () => Sk.misceval.callsimArray(setupFunction);
-        }
-
-        const drawFunction = Sk.globals["draw"];
-        if (drawFunction) {
-            p.draw = () => Sk.misceval.callsimArray(drawFunction);
-        }
-
-        const windowResized = Sk.globals["windowResized"];
-        if (windowResized) {
-            p.windowResized = (...args) => Sk.misceval.callsimArray(windowResized, sliceOrAdd(args, windowResized.co_argcount))
-        }
+    const mod = {
+        __name__: new pyStr("p5"),
+        p5: toPy(window.p5),
+        __doc__: new pyStr("A skulpt implementation of the p5 library"),
     };
-    
-    function run() {
-        p5ref = new p5(sketch);
-        checkConstants(module, p5ref);
+
+    // override _start to a plain function and call this in run when we need it
+    // this is kind of hacky
+    // _start is set in the constructor and then called
+    // by overriding the prototype means we can delay the call to _start
+    // which p5 does on initialization to get the methods in the namespace
+    let _start;
+    Object.defineProperty(window.p5.prototype, "_start", {
+        get() {
+            return () => {};
+        },
+        set(val) {
+            _start = val;
+        },
+        configurable: true,
+    });
+
+    function sketch(p) {
+        // p is a python object since we used a python function
+        for (let i in window.p5.prototype) {
+            const asStr = new pyStr(i);
+            const mangled = asStr.$mangled;
+            // it would be crazy to override builtins like print
+            if (!(mangled in __builtins__)) {
+                mod[mangled] = p.tp$getattr(asStr);
+            }
+        }
     }
 
-    function sliceOrAdd(args, requiredSize) {
-        if (args.length > requiredSize)
-            args = args.slice(0, requiredSize);
+    // create an instance of p5 and assign all the attributes to mod
+    const p = pyCall(mod.p5, [new pyFunc(sketch), toPy(Sk.p5.node || Sk.canvas)]);
+    const pInstance = p.valueOf();
+    Sk.p5.instance = pInstance;
+    Sk.p5.kill = pInstance.remove.bind(pInstance);
 
-        if (args.length < requiredSize) {
-            for (let i = 0; i < requiredSize - args.length; i++) {
-                args.push(null);
+    const sliceOrAddArguments = (args, requiredSize) => {
+        let res = [...args];
+
+        if (res.length > requiredSize)
+            res = res.slice(0, requiredSize);
+
+        if (res.length < requiredSize) {
+            for (let i = 0; i < requiredSize - res.length; i++) {
+                res.push(null);
             }
         }
 
-        return args.map(a => Sk.ffi.remapToPy(a));
-    }
-    
-    function checkConstants(module, p5)
-    {
-        const eps = 0.00001;
-        const toJs = v => Sk.ffi.remapToJs(v, {});
-        
-        assert(p5.HSB, toJs(module.HSB));
-        
-        assert(Math.abs(p5.PI - toJs(module.PI)) < eps, true);
-        assert(Math.abs(p5.QUARTER_PI - toJs(module.QUARTER_PI)) < eps, true);
-        assert(Math.abs(p5.TWO_PI - toJs(module.TWO_PI)) < eps, true);
-
-        assert(p5.WEBGL, toJs(module.WEBGL));
-
-        assert(p5.LABEL, toJs(module.LABEL));
-        assert(p5.FALLBACK, toJs(module.FALLBACK));
-
-        assert(p5.OPEN, toJs(module.OPEN));
-        assert(p5.PIE, toJs(module.PIE));
-        assert(p5.CHORD, toJs(module.CHORD));
-
-        assert(p5.CENTER, toJs(module.CENTER));
-        assert(p5.RADIUS, toJs(module.RADIUS));
-        assert(p5.CORNER, toJs(module.CORNER));
-        assert(p5.CORNERS, toJs(module.CORNERS));
-
-        assert(p5.ROUND, toJs(module.ROUND));
-        assert(p5.SQUARE, toJs(module.SQUARE));
-        assert(p5.PROJECT, toJs(module.PROJECT));
-
-        assert(p5.MITER, toJs(module.MITER));
-        assert(p5.BEVEL, toJs(module.BEVEL));
-
-        assert(p5.POINTS, toJs(module.POINTS));
-        assert(p5.LINES, toJs(module.LINES));
-        assert(p5.TRIANGLES, toJs(module.TRIANGLES));
-        assert(p5.TRIANGLE_FAN, toJs(module.TRIANGLE_FAN));
-        assert(p5.TRIANGLE_STRIP, toJs(module.TRIANGLE_STRIP));
-        assert(p5.QUADS, toJs(module.QUADS));
-        assert(p5.QUAD_STRIP, toJs(module.QUAD_STRIP));
-        assert(p5.TESS, toJs(module.TESS));
-
-        assert(p5.CLOSE, toJs(module.CLOSE));
-
-        assert(p5.ARROW, toJs(module.ARROW));
-        assert(p5.CROSS, toJs(module.CROSS));
-        assert(p5.HAND, toJs(module.HAND));
-        assert(p5.MOVE, toJs(module.MOVE));
-        assert(p5.TEXT, toJs(module.TEXT));
-        assert(p5.WAIT, toJs(module.WAIT));
-    }
-    
-    function assert(expected, actual) {
-        if (actual !== expected) 
-            throw Error(`Expected '${expected} of type '${typeof expected}' but found '${actual}' of type '${typeof actual}'`);
+        return res.map(a => Sk.ffi.remapToPy(a));
     }
 
-    function throwIfNoP5Reference() {
-        if (!p5ref) throw new Error("NoP5RefCreated");
-    }
+    const wrapFunc = (func) => (...args) => {
+        try {
+            // need to pass exact number of arguments that the wrapped function requires
+            const mappedArgs = sliceOrAddArguments(args, func.co_argcount);
+            pyCall(func, mappedArgs);
+        } catch (e) {
+            Sk.uncaughtException && Sk.uncaughtException(e);
+        }
+        // note we can't suspend because promises are just ignored in these methods
+    };
 
-    function varToPyFunc(varGetter) {
-        return new Sk.builtin.func(() => {
-            throwIfNoP5Reference();
-            return Sk.ffi.remapToPy(varGetter());
+    mod.run = new pyFunc(function run() {
+        const main = Sk.sysmodules.quick$lookup(new pyStr("__main__")).$d;
+        delete window.p5.prototype._start;
+        pInstance._start = _start;
+
+        [
+            "preload",
+            "setup",
+            "draw",
+            "deviceMoved",
+            "deviceTurned",
+            "deviceShaken",
+            "windowResized",
+            "keyPressed",
+            "keyReleased",
+            "keyTyped",
+            "mousePressed",
+            "mouseReleased",
+            "mouseClicked",
+            "doubleClicked",
+            "mouseMoved",
+            "mouseDragged",
+            "mouseWheel",
+            "touchStarted",
+            "touchMoved",
+            "touchEnded",
+        ].forEach((methodName) => {
+            const method = main[methodName];
+            if (method !== undefined) {
+                pInstance[methodName] = wrapFunc(method);
+            }
         });
-    }
 
-    function processUnhandledHook(fn) {
-        if (fn && fn.tp$call) {
-            return function (...args) {
-                Sk.misceval.callsimArray(fn, sliceOrAdd(args, fn.co_argcount))
-            };
-        }
-    }
-    
-    function remapToJsAndCall(actionGetter, args) {
-        throwIfNoP5Reference();
-        const jsArgs = args.map(a => unwrapPyNameWrapper(Sk.ffi.remapToJs(a, { unhandledHook: processUnhandledHook })));
-        return Sk.ffi.remapToPy(toPyNameWrapper(actionGetter().apply(p5ref, jsArgs)));
-    }
-    
-    function funcToPy(actionGetter) {
-        return new Sk.builtin.func((...args) => remapToJsAndCall(actionGetter, args))
-    }
+        // p5 wants to change the global namespace of things like frameCount, key. So let it
+        const _setProperty = pInstance._setProperty;
+        pInstance._setProperty = function (prop, val) {
+            _setProperty.call(this, prop, val);
+            const asStr = new pyStr(prop);
+            const mangled = asStr.$mangled;
+            mod[mangled] = main[mangled] = p.tp$getattr(asStr);
+        };
 
-    function toPyNameWrapper(value) {
-        if (!isPlainObject(value)) return value;
+        pInstance._start();
+        return pyNone;
+    });
 
-        // Use a prototype. Otherwise, it will be translated to python object as dictionary 
-        const wrapper = Object.create({}); 
-        wrapper.$wrappedValue = value;
-        // used by skulpt to display object type in error messages
-        wrapper[Symbol.toStringTag] = value.constructor && value.constructor.name;
-
-        const valuePrototype = Object.getPrototypeOf(value);
-        const allKeys = new Set([
-            ...Object.getOwnPropertyNames(value),
-            // get methods from the value prototype if it has one different from Object prototype
-            // just one level of prototypes should be enough
-            ...(valuePrototype && valuePrototype !== Object.prototype ? Object.getOwnPropertyNames(valuePrototype) : [])
-        ]);
-
-        for (const key of allKeys) {
-            // don't want to proxy constructor and private properties
-            if (key === "constructor" || key.startsWith("_")) continue;
-            
-            const snakeKey = toSnakeCase(key);
-            const propValue = value[key];
-
-            if (typeof propValue === "function") {
-                wrapper[snakeKey] = propValue.bind(value);
-            } else {
-                Object.defineProperty(wrapper, snakeKey, {
-                    get: () => value[key],
-                    set: (newValue) => {
-                        value[key] = newValue;
-                    },
-                    enumerable: true,
-                });
-            }
-        }
-
-        return wrapper;
-    }
-
-    function unwrapPyNameWrapper(wrapper) {
-        return wrapper && wrapper.$wrappedValue ? wrapper.$wrappedValue : wrapper;
-    }
-
-    function toSnakeCase(str) {
-        return str.replace(/([a-z])([A-Z])/g, "$1_$2").toLowerCase();
-    }
-
-    function isPlainObject(value) {
-        return typeof value === 'object' &&
-            value !== null &&
-            Object.prototype.toString.call(value) === '[object Object]';
-    }
-
-    const module =  {
-        __name__: new Sk.builtin.str("p5"),
-
-        run: new Sk.builtin.func(run),
-        
-        create_canvas: funcToPy(() => p5ref.createCanvas),
-
-        // Shape. 2D Primitives
-        arc: funcToPy(() => p5ref.arc),
-        circle: funcToPy(() => p5ref.circle),
-        ellipse: funcToPy(() => p5ref.ellipse),
-        line: funcToPy(() => p5ref.line),
-        point: funcToPy(() => p5ref.point),
-        quad: funcToPy(() => p5ref.quad),
-        rect: funcToPy(() => p5ref.rect),
-        square: funcToPy(() => p5ref.square),
-        triangle: funcToPy(() => p5ref.triangle),
-
-        // Shape. Attributes
-        ellipse_mode: funcToPy(() => p5ref.ellipseMode),
-        no_smooth: funcToPy(() => p5ref.noSmooth),
-        rect_mode: funcToPy(() => p5ref.rectMode),
-        smooth: funcToPy(() => p5ref.smooth),
-        stroke_cap: funcToPy(() => p5ref.strokeCap),
-        stroke_join: funcToPy(() => p5ref.strokeJoin),
-        stroke_weight: funcToPy(() => p5ref.strokeWeight),
-
-        // Shape. Vertex
-        begin_contour: funcToPy(() => p5ref.beginContour),
-        begin_shape: funcToPy(() => p5ref.beginShape),
-        bezier_vertex: funcToPy(() => p5ref.bezierVertex),
-        curve_vertex: funcToPy(() => p5ref.curveVertex),
-        end_contour: funcToPy(() => p5ref.endContour),
-        end_shape: funcToPy(() => p5ref.endShape),
-        normal: funcToPy(() => p5ref.normal),
-        quadratic_vertex: funcToPy(() => p5ref.quadraticVertex),
-        vertex: funcToPy(() => p5ref.vertex),
-        
-        // Color. Creating & Reading
-        alpha: funcToPy(() => p5ref.alpha),
-        blue: funcToPy(() => p5ref.blue),
-        brightness: funcToPy(() => p5ref.brightness),
-        color: funcToPy(() => p5ref.color),
-        green: funcToPy(() => p5ref.green),
-        hue: funcToPy(() => p5ref.hue),
-        lerp_color: funcToPy(() => p5ref.lerpColor),
-        lightness: funcToPy(() => p5ref.lightness),
-        palette_lerp: funcToPy(() => p5ref.paletteLerp),
-        red: funcToPy(() => p5ref.red),
-        saturation: funcToPy(() => p5ref.saturation),
-        
-        // Color. Setting
-        background: funcToPy(() => p5ref.background),
-        begin_clip: funcToPy(() => p5ref.beginClip),
-        clear: funcToPy(() => p5ref.clear),
-        clip: funcToPy(() => p5ref.clip),
-        color_mode: funcToPy(() => p5ref.colorMode),
-        end_clip: funcToPy(() => p5ref.endClip),
-        erase: funcToPy(() => p5ref.erase),
-        fill: funcToPy(() => p5ref.fill),
-        no_erase: funcToPy(() => p5ref.noErase),
-        no_fill: funcToPy(() => p5ref.noFill),
-        no_stroke: funcToPy(() => p5ref.noStroke),
-        stroke: funcToPy(() => p5ref.stroke),
-
-        // Environment
-        cursor: funcToPy(() => p5ref.cursor),
-        delta_time: varToPyFunc(() => p5ref.deltaTime),
-        describe: funcToPy(() => p5ref.describe),
-        describe_element: funcToPy(() => p5ref.describeElement),
-        display_density: funcToPy(() => p5ref.displayDensity),
-        display_height: varToPyFunc(() => p5ref.displayHeight),
-        display_width: varToPyFunc(() => p5ref.displayWidth),
-        focused: varToPyFunc(() => p5ref.focused),
-        frame_count: varToPyFunc(() => p5ref.frameCount),
-        frame_rate: funcToPy(() => p5ref.frameRate),
-        fullscreen: funcToPy(() => p5ref.fullscreen),
-        get_target_frame_rate: funcToPy(() => p5ref.getTargetFrameRate),
-        get_url: funcToPy(() => p5ref.getURL),
-        get_url_params: funcToPy(() => p5ref.getURLParams),
-        get_url_path: funcToPy(() => p5ref.getURLPath),
-        grid_output: funcToPy(() => p5ref.gridOutput),
-        height: varToPyFunc(() => p5ref.height),
-        no_cursor: funcToPy(() => p5ref.noCursor),
-        pixel_density: funcToPy(() => p5ref.pixelDensity),
-        // print: funcToPy(() => p5ref.print), already have "print" from standard python
-        text_output: funcToPy(() => p5ref.textOutput),
-        webgl_version: varToPyFunc(() => p5ref.webglVersion),
-        width: varToPyFunc(() => p5ref.width),
-        window_height: varToPyFunc(() => p5ref.windowHeight),
-        window_width: varToPyFunc(() => p5ref.windowWidth),
-        
-        // 3D. Interaction. Not done
-        orbit_control: funcToPy(() => p5ref.orbitControl),
-        
-        // 3D Material. Not done
-        normal_material: funcToPy(() => p5ref.normalMaterial),
-        
-        // Math. Calculation
-        abs: funcToPy(() => p5ref.abs),
-        ceil: funcToPy(() => p5ref.ceil),
-        constrain: funcToPy(() => p5ref.constrain),
-        dist: funcToPy(() => p5ref.dist),
-        exp: funcToPy(() => p5ref.exp),
-        floor: funcToPy(() => p5ref.floor),
-        fract: funcToPy(() => p5ref.fract),
-        lerp: funcToPy(() => p5ref.lerp),
-        log: funcToPy(() => p5ref.log),
-        mag: funcToPy(() => p5ref.mag),
-        map: funcToPy(() => p5ref.map),
-        max: funcToPy(() => p5ref.max),
-        min: funcToPy(() => p5ref.min),
-        norm: funcToPy(() => p5ref.norm),
-        pow: funcToPy(() => p5ref.pow),
-        round: funcToPy(() => p5ref.round),
-        sq: funcToPy(() => p5ref.sq),
-        sqrt: funcToPy(() => p5ref.sqrt),
-        
-        // Math. Noise
-        noise: funcToPy(() => p5ref.noise),
-        noise_detail: funcToPy(() => p5ref.noiseDetail),
-        noise_seed: funcToPy(() => p5ref.noiseSeed),
-        
-        // Math. Random
-        random: funcToPy(() => p5ref.random),
-        random_gaussian: funcToPy(() => p5ref.randomGaussian),
-        random_seed: funcToPy(() => p5ref.randomSeed),
-        
-        // Math. Trigonometry
-        acos: funcToPy(() => p5ref.acos),
-        angle_mode: funcToPy(() => p5ref.angleMode),
-        asin: funcToPy(() => p5ref.asin),
-        atan: funcToPy(() => p5ref.atan),
-        atan2: funcToPy(() => p5ref.atan2),
-        cos: funcToPy(() => p5ref.cos),
-        degrees: funcToPy(() => p5ref.degrees),
-        radians: funcToPy(() => p5ref.radians),
-        sin: funcToPy(() => p5ref.sin),
-        tan: funcToPy(() => p5ref.tan),
-        
-        // Math. Vector
-        create_vector: funcToPy(() => p5ref.createVector),
-
-        // Constants. Not done
-        HSB: new Sk.builtin.str("hsb"),
-        PI: new Sk.builtin.float_(Math.PI),
-        QUARTER_PI: new Sk.builtin.float_(Math.PI / 4),
-        TWO_PI: new Sk.builtin.float_(Math.PI * 2),
-        WEBGL: new Sk.builtin.str("webgl"),
-
-        LABEL: new Sk.builtin.str("label"),
-        FALLBACK: new Sk.builtin.str("fallback"),
-
-        OPEN: new Sk.builtin.str("open"),
-        PIE: new Sk.builtin.str("pie"),
-        CHORD: new Sk.builtin.str("chord"),
-
-        CENTER: new Sk.builtin.str("center"),
-        RADIUS: new Sk.builtin.str("radius"),
-        CORNER: new Sk.builtin.str("corner"),
-        CORNERS: new Sk.builtin.str("corners"),
-
-        ROUND: new Sk.builtin.str("round"),
-        SQUARE: new Sk.builtin.str("butt"),
-        PROJECT: new Sk.builtin.str("square"),
-
-        MITER: new Sk.builtin.str("miter"),
-        BEVEL: new Sk.builtin.str("bevel"),
-
-        POINTS: new Sk.builtin.int_(0),
-        LINES: new Sk.builtin.int_(1),
-        TRIANGLES: new Sk.builtin.int_(4),
-        TRIANGLE_FAN: new Sk.builtin.int_(6),
-        TRIANGLE_STRIP: new Sk.builtin.int_(5),
-        QUADS: new Sk.builtin.str("quads"),
-        QUAD_STRIP: new Sk.builtin.str("quad_strip"),
-        TESS: new Sk.builtin.str("tess"),
-
-        CLOSE: new Sk.builtin.str("close"),
-
-        ARROW: new Sk.builtin.str("default"),
-        CROSS: new Sk.builtin.str("crosshair"),
-        HAND: new Sk.builtin.str("pointer"),
-        MOVE: new Sk.builtin.str("move"),
-        TEXT: new Sk.builtin.str("text"),
-        WAIT: new Sk.builtin.str("wait"),
-    };
-
-    return module;
-};
+    return mod;
+}
