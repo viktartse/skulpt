@@ -7,35 +7,29 @@
 </head>
 <body>
 <textarea id="code" rows="24" cols="80">
-from p5 import *
+from p5s import *
 
 def setup():
-  create_canvas(500, 500, WEBGL)
-
-
+  createCanvas(500, 500)
+  v1 = createVector(1, 0);
+  v2 = createVector(0, 1)
+  d = v1.dist(v2);
+  print(d);
 i = 0
     
 def draw():
   global i
-  if i % 100 == 0: print(frame_rate())
+  if i % 100 == 0: print(frameRate())
   i += 1
+    
+  c = color(random(255), random(255), random(255), random(255))
+  c.setBlue(200)
+  fill(c)
+  ellipse(random(width), random(height), 50, 50)
 
-  background(200);
-
-
-  begin_shape();
-  curve_vertex(32, 91);
-  curve_vertex(32, 91);
-
-  curve_vertex(21, 17);
-  curve_vertex(68, 19);
-
-  curve_vertex(84, 91);
-  curve_vertex(84, 91);
-
-  end_shape();
-
-
+def windowResized(event):
+    print('window resized', event)
+run()
 </textarea>
 
 <script>

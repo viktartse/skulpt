@@ -7,28 +7,30 @@
 var $builtinmodule = function() {
     "use strict";
 
-    // create p5 reference
+    let p5ref = null;
+    
     const sketch = p => {
-        p.setup = () => {
-            const setupFunction = Sk.globals["setup"];
-            if (setupFunction) Sk.misceval.callsimArray(setupFunction);
+        const setupFunction = Sk.globals["setup"];
+        if (setupFunction) {
+            p.setup = () => Sk.misceval.callsimArray(setupFunction);
         }
 
-        p.draw = () => {
-            const drawFunction = Sk.globals["draw"];
-            if (drawFunction) Sk.misceval.callsimArray(drawFunction)
+        const drawFunction = Sk.globals["draw"];
+        if (drawFunction) {
+            p.draw = () => Sk.misceval.callsimArray(drawFunction);
         }
 
-        p.windowResized = (...args) => {
-            const windowResized = Sk.globals["windowResized"];
-            if (windowResized) {
-                Sk.misceval.callsimArray(windowResized, sliceOrAdd(args, windowResized.co_argcount))
-            }
+        const windowResized = Sk.globals["windowResized"];
+        if (windowResized) {
+            p.windowResized = (...args) => Sk.misceval.callsimArray(windowResized, sliceOrAdd(args, windowResized.co_argcount))
         }
     };
     
-    const p5ref = new p5(sketch);
-    
+    function run() {
+        p5ref = new p5(sketch);
+        checkConstants(module, p5ref);
+    }
+
     function sliceOrAdd(args, requiredSize) {
         if (args.length > requiredSize)
             args = args.slice(0, requiredSize);
@@ -42,13 +44,11 @@ var $builtinmodule = function() {
         return args.map(a => Sk.ffi.remapToPy(a));
     }
     
-    function toJs(v) {
-        return Sk.ffi.remapToJs(v);
-    }
     function checkConstants(module, p5)
     {
         const eps = 0.00001;
-
+        const toJs = v => Sk.ffi.remapToJs(v, {});
+        
         assert(p5.HSB, toJs(module.HSB));
         
         assert(Math.abs(p5.PI - toJs(module.PI)) < eps, true);
@@ -121,17 +121,73 @@ var $builtinmodule = function() {
     
     function remapToJsAndCall(actionGetter, args) {
         throwIfNoP5Reference();
-        const jsArgs = args.map(a => Sk.ffi.remapToJs(a, { unhandledHook: processUnhandledHook }));
-        return Sk.ffi.remapToPy(actionGetter().apply(p5ref, jsArgs));
+        const jsArgs = args.map(a => unwrapPyNameWrapper(Sk.ffi.remapToJs(a, { unhandledHook: processUnhandledHook })));
+        return Sk.ffi.remapToPy(toPyNameWrapper(actionGetter().apply(p5ref, jsArgs)));
     }
     
     function funcToPy(actionGetter) {
         return new Sk.builtin.func((...args) => remapToJsAndCall(actionGetter, args))
     }
-    
+
+    function toPyNameWrapper(value) {
+        if (!isPlainObject(value)) return value;
+
+        // Use a prototype. Otherwise, it will be translated to python object as dictionary 
+        const wrapper = Object.create({}); 
+        wrapper.$wrappedValue = value;
+        // used by skulpt to display object type in error messages
+        wrapper[Symbol.toStringTag] = value.constructor && value.constructor.name;
+
+        const valuePrototype = Object.getPrototypeOf(value);
+        const allKeys = new Set([
+            ...Object.getOwnPropertyNames(value),
+            // get methods from the value prototype if it has one different from Object prototype
+            // just one level of prototypes should be enough
+            ...(valuePrototype && valuePrototype !== Object.prototype ? Object.getOwnPropertyNames(valuePrototype) : [])
+        ]);
+
+        for (const key of allKeys) {
+            // don't want to proxy constructor and private properties
+            if (key === "constructor" || key.startsWith("_")) continue;
+            
+            const snakeKey = toSnakeCase(key);
+            const propValue = value[key];
+
+            if (typeof propValue === "function") {
+                wrapper[snakeKey] = propValue.bind(value);
+            } else {
+                Object.defineProperty(wrapper, snakeKey, {
+                    get: () => value[key],
+                    set: (newValue) => {
+                        value[key] = newValue;
+                    },
+                    enumerable: true,
+                });
+            }
+        }
+
+        return wrapper;
+    }
+
+    function unwrapPyNameWrapper(wrapper) {
+        return wrapper && wrapper.$wrappedValue ? wrapper.$wrappedValue : wrapper;
+    }
+
+    function toSnakeCase(str) {
+        return str.replace(/([a-z])([A-Z])/g, "$1_$2").toLowerCase();
+    }
+
+    function isPlainObject(value) {
+        return typeof value === 'object' &&
+            value !== null &&
+            Object.prototype.toString.call(value) === '[object Object]';
+    }
+
     const module =  {
         __name__: new Sk.builtin.str("p5"),
 
+        run: new Sk.builtin.func(run),
+        
         create_canvas: funcToPy(() => p5ref.createCanvas),
 
         // Shape. 2D Primitives
@@ -225,6 +281,51 @@ var $builtinmodule = function() {
         // 3D Material. Not done
         normal_material: funcToPy(() => p5ref.normalMaterial),
         
+        // Math. Calculation
+        abs: funcToPy(() => p5ref.abs),
+        ceil: funcToPy(() => p5ref.ceil),
+        constrain: funcToPy(() => p5ref.constrain),
+        dist: funcToPy(() => p5ref.dist),
+        exp: funcToPy(() => p5ref.exp),
+        floor: funcToPy(() => p5ref.floor),
+        fract: funcToPy(() => p5ref.fract),
+        lerp: funcToPy(() => p5ref.lerp),
+        log: funcToPy(() => p5ref.log),
+        mag: funcToPy(() => p5ref.mag),
+        map: funcToPy(() => p5ref.map),
+        max: funcToPy(() => p5ref.max),
+        min: funcToPy(() => p5ref.min),
+        norm: funcToPy(() => p5ref.norm),
+        pow: funcToPy(() => p5ref.pow),
+        round: funcToPy(() => p5ref.round),
+        sq: funcToPy(() => p5ref.sq),
+        sqrt: funcToPy(() => p5ref.sqrt),
+        
+        // Math. Noise
+        noise: funcToPy(() => p5ref.noise),
+        noise_detail: funcToPy(() => p5ref.noiseDetail),
+        noise_seed: funcToPy(() => p5ref.noiseSeed),
+        
+        // Math. Random
+        random: funcToPy(() => p5ref.random),
+        random_gaussian: funcToPy(() => p5ref.randomGaussian),
+        random_seed: funcToPy(() => p5ref.randomSeed),
+        
+        // Math. Trigonometry
+        acos: funcToPy(() => p5ref.acos),
+        angle_mode: funcToPy(() => p5ref.angleMode),
+        asin: funcToPy(() => p5ref.asin),
+        atan: funcToPy(() => p5ref.atan),
+        atan2: funcToPy(() => p5ref.atan2),
+        cos: funcToPy(() => p5ref.cos),
+        degrees: funcToPy(() => p5ref.degrees),
+        radians: funcToPy(() => p5ref.radians),
+        sin: funcToPy(() => p5ref.sin),
+        tan: funcToPy(() => p5ref.tan),
+        
+        // Math. Vector
+        create_vector: funcToPy(() => p5ref.createVector),
+
         // Constants. Not done
         HSB: new Sk.builtin.str("hsb"),
         PI: new Sk.builtin.float_(Math.PI),
@@ -269,8 +370,6 @@ var $builtinmodule = function() {
         TEXT: new Sk.builtin.str("text"),
         WAIT: new Sk.builtin.str("wait"),
     };
-
-    checkConstants(module, p5ref);
 
     return module;
 };
