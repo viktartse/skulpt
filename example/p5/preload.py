@@ -15,3 +15,5 @@ def setup():
 
 def mouseDragged():
     copy(bottomImg, mouseX, mouseY, 20, 20, mouseX, mouseY, 20, 20)
+    
+run()
