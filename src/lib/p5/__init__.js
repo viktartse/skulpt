@@ -17,12 +17,22 @@ function $builtinmodule() {
     for (let i in window.p5.prototype) {
         if (i.startsWith("_")) continue;
 
-        const asStr = new Sk.builtin.str(i);
-        const mangled = asStr.$mangled;
+        const isFunction = typeof window.p5.prototype[i] === "function";
+        
+        let asStr = new Sk.builtin.str(i);
+        let mangled = asStr.$mangled;
         // it would be crazy to override builtins like print
-        if (mangled in Sk.builtins) continue;
+        if (mangled in Sk.builtins) {
+            // add prefixes for function so that it's still possible to use them 
+            if (isFunction) {
+                asStr = new Sk.builtin.str("p5_" + i);
+                mangled = asStr.$mangled;
+            } else {
+                continue;
+            }
+        }
 
-        mod[mangled]  = (typeof window.p5.prototype[i] === "function") 
+        mod[mangled]  = isFunction 
             ? funcToPy(() => pInstance[i])
             : Sk.ffi.remapToPy(window.p5.prototype[i]);
     }
