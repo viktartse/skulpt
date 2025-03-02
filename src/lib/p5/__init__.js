@@ -17,8 +17,7 @@ function $builtinmodule() {
     for (let i in window.p5.prototype) {
         if (i.startsWith("_")) continue;
 
-        let pName = isSnakeCaseRequired(i) ? toSnakeCase(i) : i;
-        const asStr = new Sk.builtin.str(pName);
+        const asStr = new Sk.builtin.str(i);
         const mangled = asStr.$mangled;
         // it would be crazy to override builtins like print
         if (mangled in Sk.builtins) continue;
@@ -38,13 +37,6 @@ function $builtinmodule() {
         }
         // note we can't suspend because promises are just ignored in these methods
     };
-    
-    function isSnakeCaseRequired(name) {
-        const firstChar = name.charAt(0);
-        // if first char is not capital 
-        return firstChar.toUpperCase() !== firstChar;
-    }
-    
     function throwIfNoP5Reference() {
         if (!pInstance) throw new Error("NoP5RefCreated");
     }
@@ -60,66 +52,14 @@ function $builtinmodule() {
     
     function remapToJsAndCall(actionGetter, args) {
         throwIfNoP5Reference();
-        const jsArgs = args.map(a => unwrapPyNameWrapper(Sk.ffi.remapToJs(a, { unhandledHook: processUnhandledHook })));
-        return Sk.ffi.remapToPy(toPyNameWrapper(actionGetter().apply(pInstance, jsArgs)));
+        const jsArgs = args.map(a => Sk.ffi.remapToJs(a, { unhandledHook: processUnhandledHook }));
+        return Sk.ffi.remapToPy(actionGetter().apply(pInstance, jsArgs));
     }
 
     function funcToPy(actionGetter) {
         return new Sk.builtin.func((...args) => remapToJsAndCall(actionGetter, args))
     }
 
-    function toPyNameWrapper(value) {
-        if (typeof value !== 'object' || value === null || Object.getPrototypeOf(value) === Object.prototype) {
-            return value;
-        }
-        
-        console.log("wrapping", value);
-
-        // Use a prototype. Otherwise, it will be translated to python object as dictionary 
-        const wrapper = Object.create({});
-        wrapper.$wrappedValue = value;
-        // used by skulpt to display object type in error messages
-        wrapper[Symbol.toStringTag] = value.constructor && value.constructor.name;
-
-        const valuePrototype = Object.getPrototypeOf(value);
-        const allKeys = new Set([
-            ...Object.getOwnPropertyNames(value),
-            // get methods from the value prototype if it has one different from Object prototype
-            // just one level of prototypes should be enough
-            ...(valuePrototype && valuePrototype !== Object.prototype ? Object.getOwnPropertyNames(valuePrototype) : [])
-        ]);
-
-        for (const key of allKeys) {
-            // don't want to proxy constructor and private properties
-            if (key === "constructor" || key.startsWith("_") || !isSnakeCaseRequired(key)) continue;
-
-            const snakeKey = toSnakeCase(key);
-            const propValue = value[key];
-
-            if (typeof propValue === "function") {
-                wrapper[snakeKey] = (...args) => toPyNameWrapper(propValue.apply(value, args));
-            } else {
-                Object.defineProperty(wrapper, snakeKey, {
-                    get: () => value[key],
-                    set: (newValue) => {
-                        value[key] = newValue;
-                    },
-                    enumerable: true,
-                });
-            }
-        }
-
-        return wrapper;
-    }
-
-    function unwrapPyNameWrapper(wrapper) {
-        return wrapper && wrapper.$wrappedValue ? wrapper.$wrappedValue : wrapper;
-    }
-
-    function toSnakeCase(str) {
-        return str.replace(/([a-z])([A-Z])/g, "$1_$2").toLowerCase();
-    }
-    
     const sliceOrAddArguments = (args, requiredSize) => {
         let res = [...args];
 
@@ -132,7 +72,7 @@ function $builtinmodule() {
             }
         }
 
-        return res.map(a => Sk.ffi.remapToPy(toPyNameWrapper(a)));
+        return res.map(a => Sk.ffi.remapToPy(a));
     }
 
     const sketch = p => {
@@ -158,8 +98,7 @@ function $builtinmodule() {
             "touchMoved",
             "touchEnded",
         ].forEach((methodName) => {
-            const snakeName = toSnakeCase(methodName);
-            const method = Sk.globals[snakeName];
+            const method = Sk.globals[methodName];
             if (method !== undefined) {
                 p[methodName] = wrapFunc(method);
             }
@@ -203,8 +142,7 @@ function $builtinmodule() {
         pInstance._setProperty = function (prop, val) {
             _setProperty.call(this, prop, val);
             if (!prop.startsWith("_")) {
-                const pName = isSnakeCaseRequired(prop) ? toSnakeCase(prop) : prop;
-                const asStr = new Sk.builtin.str(pName);
+                const asStr = new Sk.builtin.str(prop);
                 const mangled = asStr.$mangled;
                 mod[mangled] = main[mangled] = Sk.ffi.remapToPy(val);
             } 

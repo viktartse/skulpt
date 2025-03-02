@@ -11,20 +11,20 @@ Sk.p5.instance.loadImage<br>
 from p5 import *
     
 def onload(event):
-    print("loaded", event.height, event.is_modified())
+    print("loaded", event.height, event.isModified())
     
 def preload():
   global bottomImg
-  bottomImg = load_image('https://p5js.org/assets/parrot-color.png', onload)
+  bottomImg = loadImage('https://p5js.org/assets/parrot-color.png', onload)
   global topImg
-  topImg = load_image('https://p5js.org/assets/parrot-bw.png', onload)
+  topImg = loadImage('https://p5js.org/assets/parrot-bw.png', onload)
 
 def setup():
-  create_canvas(720, 400);
+  createCanvas(720, 400);
   image(topImg, 0, 0);
 
-def mouse_dragged():
-    copy(bottomImg, mouse_x, mouse_y, 20, 20, mouse_x, mouse_y, 20, 20);
+def mouseDragged():
+    copy(bottomImg, mouseX, mouseY, 20, 20, mouseX, mouseY, 20, 20);
 
 run()
 </textarea>
