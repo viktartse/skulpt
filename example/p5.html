@@ -19,26 +19,15 @@
 from p5 import *
 
 def setup():
-    createCanvas(710, 400, WEBGL)
-    angleMode(DEGREES)
-    strokeWeight(5)
-    noFill()
-    stroke(32, 8, 64)
+    createCanvas(400, 400)
+
 def draw():
-    background(250, 180, 200)
+    if mouseIsPressed:
+        fill(0)
+    else:
+        fill(255)
 
-    orbitControl()
-
-    for zAngle in range(0, 180, 30):
-        for xAngle in range(0, 360, 30):
-            push()
-
-            rotateZ(zAngle)
-            rotateX(xAngle)
-
-            translate(0, 400, 0)
-            box()
-            pop()
+    circle(mouseX, mouseY, 100)
 
 run()
 </textarea>
