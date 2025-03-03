@@ -34,19 +34,29 @@ run()
 <input type="button" value="draw" onclick="run()" />
 <script>
     function run() {
-        if (Sk.p5?.kill) {
-            Sk.p5.kill()
-        }
-        
-        var prog = document.getElementById("code").value;
+        Sk.p5?.kill?.() 
+
+        const prog = document.getElementById("code").value;
         Sk.configure({
-            __future__: Sk.python3
+            __future__: Sk.python3,
+            debugging: false,
+            execLimit: 5000
         });
+        
+        Sk.uncaughtException = err => {
+            console.log(err);
+            Sk.p5?.kill?.()
+        };
 
-
-        Sk.misceval.asyncToPromise(function() {
-            return Sk.importMainWithBody("<stdin>",false,prog,true);
-        });
+        Sk.misceval
+            .asyncToPromise(() => Sk.importMainWithBody('<stdin>', false, prog, false))
+            .then(() => {
+                console.log("Done");
+            })
+            .catch((err) => {
+                console.log("Error:", err)
+            })
+        
     }
 </script>
 </body>

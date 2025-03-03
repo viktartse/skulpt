@@ -37,10 +37,13 @@ function $builtinmodule() {
             : Sk.ffi.remapToPy(window.p5.prototype[i]);
     }
     
-    const wrapFunc = (func) => (...args) => {
+    const wrapP5EventHandler = (func) => (...args) => {
         try {
             // need to pass exact number of arguments that the wrapped function requires
             const mappedArgs = sliceOrAddArguments(args, func.co_argcount);
+            // to reset starting point for execLimit on every event handler call
+            // e.g. draw() can be called a lot of times but every call should not take more than execLimit
+            Sk.execStart = new Date();
             Sk.misceval.callsimArray(func, mappedArgs);
         } catch (e) {
             Sk.uncaughtException && Sk.uncaughtException(e);
@@ -110,7 +113,7 @@ function $builtinmodule() {
         ].forEach((methodName) => {
             const method = Sk.globals[methodName];
             if (method !== undefined) {
-                p[methodName] = wrapFunc(method);
+                p[methodName] = wrapP5EventHandler(method);
             }
         });
     };
