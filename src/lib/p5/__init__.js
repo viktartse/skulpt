@@ -44,12 +44,13 @@ function $builtinmodule() {
             // to reset starting point for execLimit on every event handler call
             // e.g. draw() can be called a lot of times but every call should not take more than execLimit
             Sk.execStart = new Date();
-            Sk.misceval.callsimArray(func, mappedArgs);
+            return Sk.ffi.remapToJs(Sk.misceval.callsimArray(func, mappedArgs));
         } catch (e) {
             Sk.uncaughtException && Sk.uncaughtException(e);
         }
         // note we can't suspend because promises are just ignored in these methods
     };
+    
     function throwIfNoP5Reference() {
         if (!pInstance) throw new Error("NoP5RefCreated");
     }
@@ -57,9 +58,7 @@ function $builtinmodule() {
     function processUnhandledHook(fn) {
         // for a python function passed as a callback for another function
         if (fn && fn.tp$call) {
-            return function (...args) {
-                return Sk.misceval.callsimArray(fn, sliceOrAddArguments(args, fn.co_argcount))
-            };
+            return wrapP5EventHandler(fn);
         }
     }
     
