@@ -4,6 +4,10 @@ function $builtinmodule() {
     // setup a p5 object on Sk if not already there
     Sk.p5 || (Sk.p5 = {});
 
+    if (!Sk.p5.node) {
+        throw new Error(`Cannot use p5 in current environment.`);
+    }
+    
     Sk.p5.kill = () => pInstance?.remove();
     
     const mod = {
@@ -52,7 +56,7 @@ function $builtinmodule() {
     };
     
     function throwIfNoP5Reference() {
-        if (!pInstance) throw new Error("NoP5RefCreated");
+        if (!pInstance) throw new Error("p5 functions can be used only inside event handlers (setup, draw, ...).");
     }
     
     function processUnhandledHook(fn) {
@@ -142,7 +146,7 @@ function $builtinmodule() {
             configurable: true,
         });
 
-        pInstance = new p5(sketch, Sk.p5.node || Sk.canvas);
+        pInstance = new p5(sketch, Sk.p5.node);
 
         delete window.p5.prototype._start;
         pInstance._start = _start;

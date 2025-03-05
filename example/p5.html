@@ -18,17 +18,22 @@
 <textarea id="code" rows="24" cols="80">
 from p5 import *
 
+def onload(event):
+    print("loaded", event.height, event.isModified())
+
+def preload():
+    global bottomImg
+    bottomImg = loadImage('https://p5js.org/assets/parrot-color.png', onload)
+    global topImg
+    topImg = loadImage('https://p5js.org/assets/parrot-bw.png', onload)
+
 def setup():
-    createCanvas(400, 400)
+    createCanvas(720, 400)
+    image(topImg, 0, 0)
 
-def draw():
-    if mouseIsPressed:
-        fill(0)
-    else:
-        fill(255)
-
-    circle(mouseX, mouseY, 100)
-
+def mouseDragged():
+    copy(bottomImg, mouseX, mouseY, 20, 20, mouseX, mouseY, 20, 20)
+    
 run()
 </textarea>
 <input type="button" value="draw" onclick="run()" />
@@ -40,8 +45,12 @@ run()
         Sk.configure({
             __future__: Sk.python3,
             debugging: false,
-            execLimit: 5000
+            execLimit: 5000,
         });
+
+        Sk.p5 = {
+            node: document.getElementsByTagName("body").item(0)
+        }
         
         Sk.uncaughtException = err => {
             console.log(err);
