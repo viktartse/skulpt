@@ -7,5 +7,6 @@
    "src/lib/image.js",
    "src/lib/webbrowser.js",
    "src/lib/calendar.js",
-   "src/lib/_strptime.js"
+   "src/lib/_strptime.js",
+   "src/lib/document.js"
 ]
