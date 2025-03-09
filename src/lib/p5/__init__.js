@@ -150,7 +150,11 @@ function $builtinmodule() {
 
         delete window.p5.prototype._start;
         pInstance._start = _start;
-        
+
+        window.p5._report = function(message, method, color) {
+            throw new Error(message.replace(/\[.*?] /, ""));
+        }
+
         Sk.p5.instance = pInstance;
 
         // p5 wants to change the global namespace of things like frameCount, key. So let it
