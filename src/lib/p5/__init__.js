@@ -167,7 +167,8 @@ function $builtinmodule() {
                 mod[mangled] = main[mangled] = Sk.ffi.remapToPy(val);
             } 
         };
-
+        // ensure correct reporting of window dimensions
+        pInstance._updateWindowSize();
         pInstance._start();
     });
 
