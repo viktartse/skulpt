@@ -336,8 +336,9 @@ const boundHook = (bound, name) => ({
 function sliceOrAddArguments(args, requiredSize) {
     let res = [...args];
 
-    if (res.length > requiredSize)
+    if (res.length > requiredSize) {
         res = res.slice(0, requiredSize);
+    }
 
     if (res.length < requiredSize) {
         for (let i = 0; i < requiredSize - res.length; i++) {
