@@ -27,6 +27,7 @@ Sk.ffi = {
 
     numberToPy,
     proxy,
+    sliceOrAddArguments
 };
 
 const OBJECT_PROTO = Object.prototype;
@@ -331,6 +332,22 @@ const boundHook = (bound, name) => ({
     funcHook: (obj) => proxy(obj, { bound, name }),
     unhandledHook: (obj) => String(obj),
 });
+
+function sliceOrAddArguments(args, requiredSize) {
+    let res = [...args];
+
+    if (res.length > requiredSize)
+        res = res.slice(0, requiredSize);
+
+    if (res.length < requiredSize) {
+        for (let i = 0; i < requiredSize - res.length; i++) {
+            res.push(null);
+        }
+    }
+
+    return res;
+}
+
 const jsHooks = {
     unhandledHook: (obj) => {
         const _cached = _proxied.get(obj);
@@ -343,7 +360,13 @@ const jsHooks = {
             return pyWrapped;
         }
         const pyWrappedCallable = (...args) => {
-            args = args.map((x) => toPy(x, pyHooks));
+            let slicedArgs = args; 
+            if (Sk.adaptiveJsCallbacks) {
+                slicedArgs = Sk.ffi.sliceOrAddArguments(args, obj.co_argcount);
+                // to reset starting point for execLimit on every event handler call
+                Sk.execStart = new Date();
+            }
+            args = slicedArgs.map((x) => toPy(x, pyHooks));
             let ret = Sk.misceval.tryCatch(
                 () => Sk.misceval.chain(obj.tp$call(args), (res) => toJs(res, jsHooks)),
                 (e) => {

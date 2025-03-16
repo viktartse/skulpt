@@ -75,6 +75,7 @@ Sk.python3 = {
 Sk.configure = function (options) {
     "use strict";
 
+    Sk.adaptiveJsCallbacks = !!options["adaptiveJsCallbacks"];
     Sk.robot = options["robot"];
     Sk.checkRobot(Sk.robot);
 

@@ -44,7 +44,8 @@ function $builtinmodule() {
     const wrapP5EventHandler = (func) => (...args) => {
         try {
             // need to pass exact number of arguments that the wrapped function requires
-            const mappedArgs = sliceOrAddArguments(args, func.co_argcount);
+            const slicedArgs = Sk.ffi.sliceOrAddArguments(args, func.co_argcount);
+            const mappedArgs = slicedArgs.map(a => Sk.ffi.remapToPy(a));
             // to reset starting point for execLimit on every event handler call
             // e.g. draw() can be called a lot of times but every call should not take more than execLimit
             Sk.execStart = new Date();
@@ -74,21 +75,6 @@ function $builtinmodule() {
 
     function funcToPy(actionGetter) {
         return new Sk.builtin.func((...args) => remapToJsAndCall(actionGetter, args))
-    }
-
-    const sliceOrAddArguments = (args, requiredSize) => {
-        let res = [...args];
-
-        if (res.length > requiredSize)
-            res = res.slice(0, requiredSize);
-
-        if (res.length < requiredSize) {
-            for (let i = 0; i < requiredSize - res.length; i++) {
-                res.push(null);
-            }
-        }
-
-        return res.map(a => Sk.ffi.remapToPy(a));
     }
 
     const sketch = p => {

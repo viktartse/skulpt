@@ -1,7 +1,7 @@
 <!DOCTYPE HTML>
 <html>
 <head>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.11.2/p5.js" crossorigin=""></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.11.2/p5.min.js" crossorigin=""></script>
     <script src="../dist/skulpt.js" type="text/javascript"></script>
     <script src="../dist/skulpt-stdlib.js" type="text/javascript"></script>
     <style>
@@ -19,15 +19,16 @@
 from p5 import *
 
 def setup():
-    createCanvas(400, 400)
+  createCanvas(400, 400)
 
-def draw():
-    if mouseIsPressed:
-        fill(0)
-    else:
-        fill(255)
+  button = createButton('click me')
+  button.position(150, 200)
 
-    circle(mouseX, mouseY, 100)
+  button.mousePressed(repaint)
+
+def repaint():
+  background(random(255));
+
 
 run()
 </textarea>
@@ -46,6 +47,7 @@ run()
             __future__: Sk.python3,
             debugging: false,
             execLimit: 5000,
+            adaptiveJsCallbacks: true
         });
 
         Sk.p5 = {
@@ -53,7 +55,7 @@ run()
         }
         
         Sk.uncaughtException = err => {
-            console.log(err);
+            console.log("Error:", err);
             Sk.p5?.kill?.()
         };
 
