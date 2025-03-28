@@ -57,7 +57,7 @@ function $builtinmodule() {
     };
     
     function throwIfNoP5Reference() {
-        if (!pInstance) throw new Error("p5 functions can be used only inside event handlers (setup, draw, ...).");
+        if (!pInstance) throw new Error("p5 functions can be used only inside event handlers (setup, draw, ...) or after run()");
     }
     
     function processUnhandledHook(fn) {
