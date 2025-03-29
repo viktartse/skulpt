@@ -17,20 +17,9 @@
 <body>
 <textarea id="code" rows="24" cols="80">
 from p5 import *
+def draw():
+    print(frameCount)
 
-def setup():
-  createCanvas(400, 400)
-
-  button = createButton('click me')
-  button.position(150, 200)
-
-  button.mousePressed(repaint)
-
-def repaint():
-  background(random(255));
-
-
-run()
 </textarea>
 <input type="button" value="draw" onclick="run()" />
 <input type="button" value="stop" onclick="stop()" />
@@ -64,6 +53,9 @@ run()
             .asyncToPromise(() => Sk.importMainWithBody('<stdin>', false, prog, false))
             .then(() => {
                 console.log("Done");
+                if (Sk.p5.getInstance() === null) {
+                    Sk.p5.createSketch();
+                }
             })
             .catch((err) => {
                 console.log("Error:", err);

@@ -1,7 +1,7 @@
 function $builtinmodule() {
     let pInstance = null;
 
-    // setup a p5 object on Sk if not already there
+    // set up a p5 object on Sk if not already there
     Sk.p5 || (Sk.p5 = {});
 
     if (!Sk.p5.node) {
@@ -9,6 +9,7 @@ function $builtinmodule() {
     }
     
     Sk.p5.kill = () => pInstance?.remove();
+    Sk.p5.getInstance = () => pInstance;
     
     const mod = {
         __name__: new Sk.builtin.str("p5"),
@@ -36,9 +37,21 @@ function $builtinmodule() {
             }
         }
 
-        mod[mangled]  = isFunction 
-            ? funcToPy(() => pInstance[i])
-            : Sk.ffi.remapToPy(window.p5.prototype[i]);
+        if (i === "createCanvas") {
+            const createCanvas = () => {
+                if (!pInstance) {
+                    Sk.p5.createSketch()
+                }
+
+                return pInstance[i];
+            }
+
+            mod[mangled] = funcToPy(createCanvas, false)
+        } else {
+            mod[mangled] = isFunction
+                ? funcToPy(() => pInstance[i], true)
+                : Sk.ffi.remapToPy(window.p5.prototype[i]);
+        }
     }
     
     const wrapP5EventHandler = (func) => (...args) => {
@@ -57,7 +70,7 @@ function $builtinmodule() {
     };
     
     function throwIfNoP5Reference() {
-        if (!pInstance) throw new Error("p5 functions can be used only inside event handlers (setup, draw, ...) or after run()");
+        if (!pInstance) throw new Error("p5 functions can be used only inside event handlers (setup, draw, ...) or after createCanvas()");
     }
     
     function processUnhandledHook(fn) {
@@ -67,14 +80,15 @@ function $builtinmodule() {
         }
     }
     
-    function remapToJsAndCall(actionGetter, args) {
-        throwIfNoP5Reference();
+    function remapToJsAndCall(actionGetter, checkP5Reference, args) {
+        if (checkP5Reference) throwIfNoP5Reference();
+
         const jsArgs = args.map(a => Sk.ffi.remapToJs(a, { unhandledHook: processUnhandledHook }));
         return Sk.ffi.remapToPy(actionGetter().apply(pInstance, jsArgs));
     }
 
-    function funcToPy(actionGetter) {
-        return new Sk.builtin.func((...args) => remapToJsAndCall(actionGetter, args))
+    function funcToPy(actionGetter, checkP5Reference) {
+        return new Sk.builtin.func((...args) => remapToJsAndCall(actionGetter, checkP5Reference, args))
     }
 
     const sketch = p => {
@@ -107,11 +121,11 @@ function $builtinmodule() {
         });
     };
 
-    mod.run = new Sk.builtin.func(function run() {
+    Sk.p5.createSketch = () => {
         const main = Sk.sysmodules.quick$lookup(new Sk.builtin.str("__main__")).$d;
         
-        const runName = "run";
-        const isImportedInGlobalNamespace = main[runName] && main[runName] === mod[runName];
+        const methodToProbe = "createCanvas";
+        const isImportedInGlobalNamespace = main[methodToProbe] && main[methodToProbe] === mod[methodToProbe];
         if (!isImportedInGlobalNamespace) {
             throw new Error("Only 'from p5 import *' supported.")
         }
@@ -156,7 +170,7 @@ function $builtinmodule() {
         // ensure correct reporting of window dimensions
         pInstance._updateWindowSize();
         pInstance._start();
-    });
+    };
 
     return mod;
 }
