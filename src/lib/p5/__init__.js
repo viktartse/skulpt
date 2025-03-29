@@ -53,6 +53,31 @@ function $builtinmodule() {
                 : Sk.ffi.remapToPy(window.p5.prototype[i]);
         }
     }
+
+    updateWindowSize();
+    
+    function updateWindowSize() {
+        mod['windowWidth'] = getWindowWidth();
+        mod['windowHeight'] = getWindowHeight();
+    }
+    
+    function getWindowWidth() {
+        return (
+            window.innerWidth ||
+            (document.documentElement && document.documentElement.clientWidth) ||
+            (document.body && document.body.clientWidth) ||
+            0
+        );
+    }
+
+    function getWindowHeight() {
+        return (
+            window.innerHeight ||
+            (document.documentElement && document.documentElement.clientHeight) ||
+            (document.body && document.body.clientHeight) ||
+            0
+        );
+    }
     
     const wrapP5EventHandler = (func) => (...args) => {
         try {
