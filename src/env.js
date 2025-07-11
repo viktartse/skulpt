@@ -81,6 +81,10 @@ Sk.configure = function (options) {
 
     Sk.send_message = options["send_message"] || function() {};
     Sk.asserts.assert(typeof Sk.send_message === "function");
+    
+    if (options["locale"]) {
+        Sk.msgCatalog.setLocale(options["locale"]);
+    }
 
     Sk.output = options["output"] || Sk.output;
     Sk.asserts.assert(typeof Sk.output === "function");

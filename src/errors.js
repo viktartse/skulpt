@@ -71,7 +71,7 @@ const BaseException = Sk.abstr.buildNativeClass("BaseException", {
             let ret = this.tp$name;
             ret += ": " + this.tp$str().v;
             if (this.traceback.length !== 0) {
-                ret += " on line " + this.traceback[0].lineno;
+                ret += ` ${Sk.msgCatalog.t("error.on_line")} ${this.traceback[0].lineno}`;
             } else {
                 ret += " at <unknown>";
             }

@@ -251,7 +251,7 @@ the \'lazy\' dog.\n\
                 compile(s, "<test>", "exec")
             # self.assertIn("unexpected EOF", str(cm.exception))
             # @TODO skulpt uses the tokenize.py so maybe reason for different error here
-            self.assertIn("EOF", str(cm.exception))
+            self.assertIn("construct was started", str(cm.exception))
 
 var_annot_global: int # a global annotated is necessary for test_var_annot
 

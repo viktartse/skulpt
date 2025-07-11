@@ -56,6 +56,237 @@ Parser.prototype.setup = function (start) {
     };
     this.stack = [stackentry];
     this.used_names = {};
+
+    // Add token history for better error messages
+    this.recent_tokens = [];
+    this.max_recent_tokens = 5;
+};
+
+Parser.prototype.getReadableTokenName = function(labelIndex) {
+    const label = this.grammar.labels[labelIndex];
+    const labelType = label[0];
+    const labelValue = label[1];
+
+    // First, check if this is a keyword
+    for (let keyword in this.grammar.keywords) {
+        if (this.grammar.keywords[keyword] === labelIndex) {
+            return "'" + keyword + "'";
+        }
+    }
+
+    // Handle terminals (tokens)
+    if (labelType < 256) {
+        const tokenName = Sk.token.tok_name[labelType];
+
+        // Look up the actual operator symbol from EXACT_TOKEN_TYPES
+        for (const symbol in Sk.token.EXACT_TOKEN_TYPES) {
+            if (Sk.token.EXACT_TOKEN_TYPES[symbol] === labelType) {
+                return "'" + symbol + "'";
+            }
+        }
+
+        const msgCatalog = Sk.msgCatalog;
+        // Handle other token types with user-friendly names
+        switch (tokenName) {
+            case "T_NAME": return msgCatalog.t("token.identifier", {value: labelValue});
+            case "T_NUMBER": return msgCatalog.t("token.number", {value: labelValue});
+            case "T_STRING": return msgCatalog.t("token.string", {value: labelValue});
+            case "T_NEWLINE": return msgCatalog.t("token.newline");
+            case "T_INDENT": return msgCatalog.t("token.indentation");
+            case "T_DEDENT": return msgCatalog.t("token.dedentation");
+            case "T_ENDMARKER": return msgCatalog.t("token.end_of_file");
+            default:
+                // Remove T_ prefix and convert to lowercase
+                return tokenName.replace(/^T_/, "").toLowerCase();
+        }
+    }
+
+    return null;
+};
+
+Parser.prototype.getReadableSymbolName = function(symbolType) {
+    if (Sk.ParseTables.number2symbol && Sk.ParseTables.number2symbol[symbolType]) {
+        const symbolName = Sk.ParseTables.number2symbol[symbolType];
+        const msgCatalog = Sk.msgCatalog;
+        
+        // Use localized symbol names based on actual grammar
+        switch (symbolName) {
+            // Control flow
+            case "suite": return msgCatalog.t("symbol.code_block");
+
+            // Import statements
+            case "import_stmt": return msgCatalog.t("symbol.import_statement");
+            case "import_name": return msgCatalog.t("symbol.import_statement");
+            case "import_from": return msgCatalog.t("symbol.from_import_statement");
+            case "import_as_name": return msgCatalog.t("symbol.import_alias");
+            case "import_as_names": return msgCatalog.t("symbol.import_list");
+            case "dotted_as_name": return msgCatalog.t("symbol.dotted_import_alias");
+            case "dotted_as_names": return msgCatalog.t("symbol.dotted_import_list");
+            case "dotted_name": return msgCatalog.t("symbol.module_name");
+
+            // Expressions
+            case "expr": return msgCatalog.t("symbol.expression");
+            case "test": return msgCatalog.t("symbol.expression");
+            case "test_nocond": return msgCatalog.t("symbol.expression");
+            case "or_test": return msgCatalog.t("symbol.or_expression");
+            case "and_test": return msgCatalog.t("symbol.and_expression");
+            case "not_test": return msgCatalog.t("symbol.not_expression");
+            case "comparison": return msgCatalog.t("symbol.comparison");
+            case "comp_op": return msgCatalog.t("symbol.comparison_operator");
+
+            // Arithmetic expressions
+            case "xor_expr": return msgCatalog.t("symbol.xor_expression");
+            case "and_expr": return msgCatalog.t("symbol.bitwise_and_expression");
+            case "shift_expr": return msgCatalog.t("symbol.shift_expression");
+            case "arith_expr": return msgCatalog.t("symbol.arithmetic_expression");
+            case "term": return msgCatalog.t("symbol.term");
+            case "factor": return msgCatalog.t("symbol.factor");
+            case "power": return msgCatalog.t("symbol.power_expression");
+            case "atom_expr": return msgCatalog.t("symbol.atom_expression");
+            case "atom": return msgCatalog.t("symbol.atom");
+            case "star_expr": return msgCatalog.t("symbol.star_expression");
+
+            // Lists and comprehensions
+            case "testlist": return msgCatalog.t("symbol.expression_list");
+            case "testlist_comp": return msgCatalog.t("symbol.expression_list_or_comprehension");
+            case "testlist_star_expr": return msgCatalog.t("symbol.expression_list_with_star");
+            case "exprlist": return msgCatalog.t("symbol.expression_list");
+            case "comp_for": return msgCatalog.t("symbol.comprehension_for");
+            case "comp_if": return msgCatalog.t("symbol.comprehension_if");
+            case "comp_iter": return msgCatalog.t("symbol.comprehension_iterator");
+
+            // Data structures
+            case "dictorsetmaker": return msgCatalog.t("symbol.dict_or_set_maker");
+            case "trailer": return msgCatalog.t("symbol.trailer");
+            case "subscript": return msgCatalog.t("symbol.subscript");
+            case "subscriptlist": return msgCatalog.t("symbol.subscript_list");
+            case "sliceop": return msgCatalog.t("symbol.slice_operator");
+
+            // Assignment
+            case "augassign": return msgCatalog.t("symbol.augmented_assignment");
+            case "annassign": return msgCatalog.t("symbol.annotated_assignment");
+
+            // Lambda expressions
+            case "lambdef": return msgCatalog.t("symbol.lambda_expression");
+            case "lambdef_nocond": return msgCatalog.t("symbol.lambda_expression");
+
+            // Yield expressions
+            case "yield_expr": return msgCatalog.t("symbol.yield_expression");
+            case "yield_arg": return msgCatalog.t("symbol.yield_argument");
+
+            // Encoding
+            case "encoding_decl": return msgCatalog.t("symbol.encoding_declaration");
+
+            // Default case - convert underscores and make readable
+            default:
+                var readable = symbolName
+                    .replace(/_/g, " ")
+                    .replace(/\bstmt\b/g, msgCatalog.t("symbol.statement_suffix"))
+                    .replace(/\bexpr\b/g, msgCatalog.t("symbol.expression_suffix"))
+                    .replace(/\btest\b/g, msgCatalog.t("symbol.test_suffix"))
+                    .replace(/\blist\b/g, msgCatalog.t("symbol.list_suffix"))
+                    .replace(/\bdef\b/g, msgCatalog.t("symbol.definition_suffix"));
+
+                return readable;
+        }
+    }
+
+    return null;
+};
+
+// Helper method to describe the actual token that was found
+Parser.prototype.getActualTokenDescription = function(type, value) {
+    const tokenName = Sk.token.tok_name[type];
+    const msgCatalog = Sk.msgCatalog;
+    
+    if (!tokenName) {
+        return msgCatalog.t("syntax.unexpected_token");
+    }
+
+    switch (tokenName) {
+        case "T_NAME": return msgCatalog.t("context.identifier_value", {value: value});
+        case "T_NUMBER": return msgCatalog.t("context.number_value", {value: value});
+        case "T_STRING": return msgCatalog.t("context.string_value", {value: value});
+        case "T_NEWLINE": return msgCatalog.t("token.newline");
+        case "T_INDENT": return msgCatalog.t("token.indentation");
+        case "T_DEDENT": return msgCatalog.t("token.dedentation");
+        case "T_ENDMARKER": return msgCatalog.t("token.end_of_file");
+        default:
+            if (value && value.length <= 3) {
+                return "'" + value + "'";
+            }
+            return tokenName.replace(/^T_/, "").toLowerCase();
+    }
+};
+
+Parser.prototype.generateContextualErrorMessage = function(expected, actualType, actualValue, context) {
+    // Check for string issues first
+    const stringIssue = this.detectStringIssue(actualType, actualValue, context);
+    if (stringIssue) {
+        return stringIssue;
+    }
+
+    // Generate standard expected/got message using localization
+    let message;
+    const msgCatalog = Sk.msgCatalog;
+    
+    if (expected.length === 0) {
+        message = msgCatalog.t("syntax.unexpected_token");
+    } else if (expected.length === 1) {
+        message = msgCatalog.t("syntax.expected_single", {expected: expected[0]});
+    } else if (expected.length <= 4) {
+        let expectedText;
+        if (expected.length === 2) {
+            expectedText = expected[0] + " " + msgCatalog.t("common.or") + " " + expected[1];
+        } else {
+            expectedText = expected.slice(0, -1).join(", ") + " " + msgCatalog.t("common.or") + " " + expected[expected.length - 1];
+        }
+        message = msgCatalog.t("syntax.expected_multiple", {expected: expectedText});
+    } else {
+        message = msgCatalog.t("syntax.expected_one_of", {expected: expected.slice(0, 4).join(", ")});
+    }
+
+    const actualToken = this.getActualTokenDescription(actualType, actualValue);
+    if (actualToken) {
+        message += msgCatalog.t("syntax.got_token", {actual: actualToken});
+    }
+
+    return message;
+};
+
+// Detect potential string literal issues
+Parser.prototype.detectStringIssue = function(actualType, actulaValue, context) {
+    const line = context[2];
+    const col = context[0][1];
+
+    const msgCatalog = Sk.msgCatalog;
+    
+    if (line && col > 0) {
+        const beforeError = line.substring(0, col);
+        const doubleQuotes = (beforeError.match(/"/g) || []).length;
+        const singleQuotes = (beforeError.match(/'/g) || []).length;
+
+        if (doubleQuotes % 2 === 1) {
+            return msgCatalog.t("string.unterminated", {quote: '"'});
+        }
+        if (singleQuotes % 2 === 1) {
+            return msgCatalog.t("string.unterminated", {quote: "'"});
+        }
+
+        const mixedQuotesPattern = /["'][^"']*['"]$/;
+        if (mixedQuotesPattern.test(beforeError)) {
+            return msgCatalog.t("string.mismatched_quotes");
+        }
+    }
+
+    if (this.recent_tokens.length > 0) {
+        const lastToken = this.recent_tokens[this.recent_tokens.length - 1];
+        if (lastToken.type === Sk.token.tokens.T_STRING && actualType === Sk.token.tokens.T_NAME) {
+            return msgCatalog.t("string.unterminated", {quote: "\""});
+        }
+    }
+
+    return null;
 };
 
 function findInDfa (a, obj) {
@@ -71,7 +302,19 @@ function findInDfa (a, obj) {
 
 // Add a token; return true if we're done
 Parser.prototype.addtoken = function (type, value, context) {
-    var errline;
+    // Store recent tokens for better error messages
+    this.recent_tokens.push({
+        type: type,
+        value: value,
+        context: context
+    });
+    if (this.recent_tokens.length > this.max_recent_tokens) {
+        this.recent_tokens.shift();
+    }
+
+    const msgCatalog = Sk.msgCatalog;
+    
+    var errMessage;
     var itsfirst;
     var itsdfa;
     var state;
@@ -147,12 +390,49 @@ Parser.prototype.addtoken = function (type, value, context) {
             //print("WAA");
             this.pop();
             if (this.stack.length === 0) {
-                throw new Sk.builtin.SyntaxError("too much input", this.filename);
+                throw new Sk.builtin.SyntaxError(msgCatalog.t("syntax.too_much_input"), this.filename);
             }
         } else {
             // no transition
-            errline = context[0][0];
-            throw new Sk.builtin.SyntaxError("bad input", this.filename, errline, context);
+            // Generate improved error message with context
+
+            // The message generation is in the try catch as I'm not 100% sure about the code correctness (vibe coded).
+            // So, if something is wrong the original unclear message should be shown
+            try {
+                const expected = [];
+                const seenLabels = new Set();
+
+                // Collect all possible transitions from current state
+                for (const element of arcs) {
+                    const labelIndex = element[0];
+
+                    if (seenLabels.has(labelIndex)) {
+                        continue;
+                    }
+                    seenLabels.add(labelIndex);
+
+                    const label = this.grammar.labels[labelIndex];
+                    const labelType = label[0];
+
+                    if (labelType < 256) {
+                        const tokenName = this.getReadableTokenName(labelIndex);
+                        if (tokenName) {
+                            expected.push(tokenName);
+                        }
+                    } else {
+                        const symbolName = this.getReadableSymbolName(labelType);
+                        if (symbolName) {
+                            expected.push(symbolName);
+                        }
+                    }
+                }
+
+                errMessage = this.generateContextualErrorMessage(expected, type, value, context);
+            } catch {
+                throw new Sk.builtin.SyntaxError("bad input", this.filename, context[0][0], context);
+            }
+
+            throw new Sk.builtin.SyntaxError(errMessage, this.filename, context[0][0], context);
         }
     }
 };

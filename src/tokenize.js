@@ -363,7 +363,7 @@ function _tokenize(filename, readline, encoding, yield_) {
             }
         } else {                                  // continued statement
             if (!line) {
-                throw new TokenError("EOF in multi-line statement", filename, lnum, 0);
+                throw new TokenError(Sk.msgCatalog.t("tokenize.EOF"), filename, lnum, 0);
             }
             continued = 0;
         }

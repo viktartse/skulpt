@@ -683,7 +683,7 @@ Sk.misceval.loadname = function (name, other) {
         return bi;
     }
 
-    throw new Sk.builtin.NameError("name '" + Sk.unfixReserved(name) + "' is not defined");
+    throw new Sk.builtin.NameError(Sk.msgCatalog.t("name.is_not_defined", {value: Sk.unfixReserved(name)}));
 };
 Sk.exportSymbol("Sk.misceval.loadname", Sk.misceval.loadname);
 

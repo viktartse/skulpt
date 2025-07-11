@@ -58,7 +58,7 @@ const binop_name_to_symbol = {
 function binop_type_error(v, w, name) {
     const vtypename = Sk.abstr.typeName(v);
     const wtypename = Sk.abstr.typeName(w);
-    throw new Sk.builtin.TypeError("unsupported operand type(s) for " + binop_name_to_symbol[name] + ": '" + vtypename + "' and '" + wtypename + "'");
+    throw new Sk.builtin.TypeError(Sk.msgCatalog.t("abstract.binop_type_error", {op: binop_name_to_symbol[name], operand1: vtypename, operand2: wtypename}));
 };
 
 function biniop_type_error(v, w, name) {
@@ -74,7 +74,7 @@ const uop_name_to_symbol = {
 };
 function unop_type_error(v, name) {
     var vtypename = Sk.abstr.typeName(v);
-    throw new Sk.builtin.TypeError("bad operand type for unary " + uop_name_to_symbol[name] + ": '" + vtypename + "'");
+    throw new Sk.builtin.TypeError(Sk.msgCatalog.t("abstract.unop_type_error", {op: uop_name_to_symbol[name], operand: vtypename}));
 };
 
 /**
