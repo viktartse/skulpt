@@ -112,6 +112,7 @@ MessageCatalog.prototype.loadDefaultCatalogs = function() {
         "tokenize.EOF": "construct was started but not completed",
         "abstract.binop_type_error": "unsupported operand type(s) for {op}: '{operand1}' and '{operand2}'",
         "abstract.unop_type_error": "bad operand type for unary {op}: '{operand}'",
+        "function.missing_required_args": "{name}() missing {length} required argument{plural}" ,
     };
 
     // Russian
@@ -222,6 +223,7 @@ MessageCatalog.prototype.loadDefaultCatalogs = function() {
         "tokenize.EOF": "конструкция началась и не завершилась",
         "abstract.binop_type_error": "неподдерживаемые типы операндов для {op}: '{operand1}' и '{operand2}'",
         "abstract.unop_type_error": "неподдерживаемый тип операнда для {op}: '{operand}'",
+        "function.missing_required_args": "для {name}() отсутствует несколько ({length}) обязательных аргументов" ,
     };
 };
 

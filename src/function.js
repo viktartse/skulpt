@@ -287,12 +287,9 @@ function $resolveArgs(posargs, kw) {
             }
         }
         if (missing.length != 0 && (this.co_argcount || this.co_varnames)) {
-            throw new Sk.builtin.TypeError(
-                this.$name +
-                    "() missing " +
-                    missing.length +
-                    " required argument" +
-                    (missing.length == 1 ? "" : "s") +
+            throw new Sk.builtin.TypeError(Sk.msgCatalog.t(
+                "function.missing_required_args", 
+                {name: this.$name, length: missing.length, plural: (missing.length === 1 ? "" : "s")}) +
                     (missingUnnamed ? "" : ": " + missing.map((x) => "'" + x + "'").join(", "))
             );
         }
