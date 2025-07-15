@@ -742,21 +742,21 @@ Sk.str2number = function (s, base) {
             s = s.substring(2);
             base = 16;
         } else if (base < 34) {
-            throw new Sk.builtin.ValueError("invalid literal for int() with base " + base + ": '" + origs + "'");
+            throw new Sk.builtin.ValueError(Sk.msgCatalog.t("int.invalid_literal", {base, origs}));
         }
     } else if (s.substring(0, 2).toLowerCase() === "0b") {
         if (base === 2 || base === 0) {
             s = s.substring(2);
             base = 2;
         } else if (base < 12) {
-            throw new Sk.builtin.ValueError("invalid literal for int() with base " + base + ": '" + origs + "'");
+            throw new Sk.builtin.ValueError(Sk.msgCatalog.t("int.invalid_literal", {base, origs}));
         }
     } else if (s.substring(0, 2).toLowerCase() === "0o") {
         if (base === 8 || base === 0) {
             s = s.substring(2);
             base = 8;
         } else if (base < 25) {
-            throw new Sk.builtin.ValueError("invalid literal for int() with base " + base + ": '" + origs + "'");
+            throw new Sk.builtin.ValueError(Sk.msgCatalog.t("int.invalid_literal", {base, origs}));
         }
     } else if (s.charAt(0) === "0") {
         if (s === "0") {
@@ -773,7 +773,7 @@ Sk.str2number = function (s, base) {
 
     if (s.indexOf("_") !== -1) {
         if (s.indexOf("__") !== -1) {
-            throw new Sk.builtin.ValueError("invalid literal for int() with base " + base + ": '" + origs + "'");
+            throw new Sk.builtin.ValueError(Sk.msgCatalog.t("int.invalid_literal", {base, origs}));
         }
 
         if (base !== 10) {
@@ -786,7 +786,7 @@ Sk.str2number = function (s, base) {
     }
 
     if (s.length === 0) {
-        throw new Sk.builtin.ValueError("invalid literal for int() with base " + base + ": '" + origs + "'");
+        throw new Sk.builtin.ValueError(Sk.msgCatalog.t("int.invalid_literal", {base, origs}));
     }
 
     // check all characters are valid
@@ -805,7 +805,7 @@ Sk.str2number = function (s, base) {
         }
 
         if (val >= base) {
-            throw new Sk.builtin.ValueError("invalid literal for int() with base " + base + ": '" + origs + "'");
+            throw new Sk.builtin.ValueError(Sk.msgCatalog.t("int.invalid_literal", {base, origs}));
         }
     }
 
