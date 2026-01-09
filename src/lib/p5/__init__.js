@@ -84,8 +84,9 @@ function $builtinmodule() {
         pInstance.push();
         
         const step = 50
-        const tickSize = 5;
+        const tickSize = 7;
         const textSize = 14;
+        const axesStrokeWeight = 6;
         const tickStokeWeight = 2;
         const crossLineWeight = 0.2;
         const height = Math.min(pInstance.height, 10_000);
@@ -94,7 +95,13 @@ function $builtinmodule() {
         pInstance.textSize(textSize);
         pInstance.fill(color);
 
-        // x axis
+        // Axes
+        pInstance.stroke(color);
+        pInstance.strokeWeight(axesStrokeWeight);
+        pInstance.line(0, 0, width - 1, 0); // X
+        pInstance.line(0, 0, 0, height - 1); // Y
+
+        // x ticks
         for (let x = step; x < width; x += step) {
             pInstance.stroke(color);
             
@@ -110,7 +117,7 @@ function $builtinmodule() {
             pInstance.text(x, x - numWidth / 2, tickSize + textSize + 5);
         }
 
-        // y axis
+        // y ticks
         for (let y = step; y < height; y += step) {
             pInstance.stroke(color);
             
