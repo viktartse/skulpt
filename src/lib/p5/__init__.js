@@ -79,6 +79,69 @@ function $builtinmodule() {
         );
     }
     
+    function drawAxes(color = "black") {
+        throwIfNoP5Reference();
+        pInstance.push();
+        
+        const step = 50
+        const tickSize = 5;
+        const textSize = 14;
+        const tickStokeWeight = 2;
+        const crossLineWeight = 0.2;
+        const height = Math.min(pInstance.height, 10_000);
+        const width = Math.min(pInstance.width, 10_000);
+
+        pInstance.textSize(textSize);
+        pInstance.fill(color);
+
+        // x axis
+        for (let x = step; x < width; x += step) {
+            pInstance.stroke(color);
+            
+            pInstance.strokeWeight(crossLineWeight);
+            pInstance.line(x, 0, x, height - 1);
+            
+            pInstance.strokeWeight(tickStokeWeight);
+            pInstance.line(x, 0, x, tickSize);
+            
+            // caption
+            pInstance.noStroke();
+            const numWidth = pInstance.textWidth(x);
+            pInstance.text(x, x - numWidth / 2, tickSize + textSize + 5);
+        }
+
+        // y axis
+        for (let y = step; y < height; y += step) {
+            pInstance.stroke(color);
+            
+            pInstance.strokeWeight(crossLineWeight);
+            pInstance.line(0, y, width - 1, y);
+            
+            pInstance.strokeWeight(tickStokeWeight);
+            pInstance.line(0, y, tickSize, y);
+
+            // caption
+            pInstance.noStroke();
+            pInstance.strokeWeight(tickStokeWeight);
+            pInstance.text(y, tickSize + 5, y + textSize / 2 - 2);
+        }
+
+        pInstance.pop();
+    }
+
+    mod.drawAxes = new Sk.builtin.func((...args) => {
+        Sk.builtin.pyCheckArgsLen("drawAxes", args.length, 0, 1);
+        let color;
+        if (args.length > 0) {
+            Sk.builtin.pyCheckType("color", "str", Sk.builtin.checkString(args[0]));
+            color = Sk.ffi.remapToJs(args[0]); 
+        }
+
+        drawAxes(color);
+
+        return Sk.builtin.none.none$;
+    });
+
     const wrapP5EventHandler = (func) => (...args) => {
         try {
             // need to pass exact number of arguments that the wrapped function requires

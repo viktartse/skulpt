@@ -17,8 +17,14 @@
 <body>
 <textarea id="code" rows="24" cols="80">
 from p5 import *
-def draw():
-    print(frameCount)
+
+createCanvas(700, 500)
+background(220)
+
+drawAxes()
+
+stroke("blue")
+circle(250, 250, 100)
 
 </textarea>
 <input type="button" value="draw" onclick="run()" />
