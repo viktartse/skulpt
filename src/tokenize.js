@@ -446,7 +446,27 @@ function _tokenize(filename, readline, encoding, yield_) {
                         needcont = 1;
                         contline = line;
                         break;
-                    } else {                                  // ordinary string
+                    } else {
+                        // ordinary string
+                        // Find the quote character and its position (may be after a prefix like r, b, f, etc.)
+                        let quote = null;
+                        let quotePos = -1;
+                        for (let qi = 0; qi < Math.min(token.length, 3); qi++) {
+                            if (token[qi] === '"' || token[qi] === "'") {
+                                quote = token[qi];
+                                quotePos = qi;
+                                break;
+                            }
+                        }
+
+                        // A valid string must:
+                        // 1. Have a quote character
+                        // 2. End with the same quote character
+                        // 3. The closing quote must be AFTER the opening quote (different position)
+                        if (!quote || !token.endsWith(quote) || quotePos === token.length - 1) {
+                            throw new TokenError(Sk.msgCatalog.t("string.unterminated", {quote: quote}), filename, lnum, start);
+                        }
+
                         yield_(new TokenInfo(tokens.T_STRING, token, spos, epos, line));
                     }
 

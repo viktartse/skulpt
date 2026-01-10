@@ -18,7 +18,6 @@ MessageCatalog.prototype.loadDefaultCatalogs = function() {
 
         // String-related errors
         "string.unterminated": "unterminated string literal (missing closing {quote})",
-        "string.mismatched_quotes": "string literal uses mismatched quotes (cannot mix single and double quotes)",
 
         // Token names
         "token.identifier": "identifier",
@@ -129,7 +128,6 @@ MessageCatalog.prototype.loadDefaultCatalogs = function() {
 
         // String-related errors
         "string.unterminated": "незавершённая строковая константа (отсутствует закрывающая {quote})",
-        "string.mismatched_quotes": "строковая константа использует несовпадающие кавычки (нельзя смешивать одинарные и двойные кавычки)",
         "string.incomplete_statement": "инструкция кажется незавершённой - возможно незавершённая строковая константа (получен {actual})",
 
         // Token names

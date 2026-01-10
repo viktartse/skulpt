@@ -220,12 +220,6 @@ Parser.prototype.getActualTokenDescription = function(type, value) {
 };
 
 Parser.prototype.generateContextualErrorMessage = function(expected, actualType, actualValue, context) {
-    // Check for string issues first
-    const stringIssue = this.detectStringIssue(actualType, actualValue, context);
-    if (stringIssue) {
-        return stringIssue;
-    }
-
     // Generate standard expected/got message using localization
     let message;
     const msgCatalog = Sk.msgCatalog;
@@ -252,41 +246,6 @@ Parser.prototype.generateContextualErrorMessage = function(expected, actualType,
     }
 
     return message;
-};
-
-// Detect potential string literal issues
-Parser.prototype.detectStringIssue = function(actualType, actulaValue, context) {
-    const line = context[2];
-    const col = context[0][1];
-
-    const msgCatalog = Sk.msgCatalog;
-    
-    if (line && col > 0) {
-        const beforeError = line.substring(0, col);
-        const doubleQuotes = (beforeError.match(/"/g) || []).length;
-        const singleQuotes = (beforeError.match(/'/g) || []).length;
-
-        if (doubleQuotes % 2 === 1) {
-            return msgCatalog.t("string.unterminated", {quote: '"'});
-        }
-        if (singleQuotes % 2 === 1) {
-            return msgCatalog.t("string.unterminated", {quote: "'"});
-        }
-
-        const mixedQuotesPattern = /["'][^"']*['"]$/;
-        if (mixedQuotesPattern.test(beforeError)) {
-            return msgCatalog.t("string.mismatched_quotes");
-        }
-    }
-
-    if (this.recent_tokens.length > 0) {
-        const lastToken = this.recent_tokens[this.recent_tokens.length - 1];
-        if (lastToken.type === Sk.token.tokens.T_STRING && actualType === Sk.token.tokens.T_NAME) {
-            return msgCatalog.t("string.unterminated", {quote: "\""});
-        }
-    }
-
-    return null;
 };
 
 function findInDfa (a, obj) {
@@ -616,7 +575,6 @@ Sk.parse = function parse (filename, input) {
             if (tokenInfo.type === T_OP) {
                 type = Sk.OpMap[tokenInfo.string];
             }
-
             parser.addtoken(type || tokenInfo.type, tokenInfo.string, [tokenInfo.start, tokenInfo.end, tokenInfo.line]);
 
             if (tokenInfo.type === T_ENDMARKER) {
