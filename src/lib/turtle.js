@@ -2069,14 +2069,19 @@ function generateTurtleModule(_target) {
         if (!context || !path || !path.length) return;
 
         context.save();
-        context.beginPath();
-        context.moveTo(path[0].x,path[0].y);
-        for(i = 1; i < path.length; i++) {
-            context.lineTo(path[i].x, path[i].y);
+
+        // Fill only if fill color is set. Can be empty string.
+        // color("red", "")
+        if (this.fill) {
+            context.beginPath();
+            context.moveTo(path[0].x, path[0].y);
+            for (i = 1; i < path.length; i++) {
+                context.lineTo(path[i].x, path[i].y);
+            }
+            context.closePath();
+            context.fillStyle = this.fill;
+            context.fill();
         }
-        context.closePath();
-        context.fillStyle = this.fill;
-        context.fill();
 
         const startTimestamp = performance.now();
         let preferQuality = true;
