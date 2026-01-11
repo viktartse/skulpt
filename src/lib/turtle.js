@@ -1014,7 +1014,7 @@ function generateTurtleModule(_target) {
             message = String(message);
 
             if (font && font.constructor === Array) {
-                face = typeof font[0] === "string" ? font[0] : "Arial";
+                face = typeof font[0] === "string" && font[0] !== "" ? font[0] : "Arial";
                 size = String(font[1] || "12pt");
                 type = typeof font[2] === "string" ? font[2] : "normal";
                 if (/^\d+$/.test(size)) {
