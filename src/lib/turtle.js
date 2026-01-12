@@ -2078,7 +2078,7 @@ function generateTurtleModule(_target) {
             }
             context.closePath();
             context.fillStyle = this.fill;
-            context.fill();
+            context.fill("evenodd");
         }
 
         const startTimestamp = performance.now();
