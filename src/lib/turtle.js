@@ -508,7 +508,6 @@ function generateTurtleModule(_target) {
                     speed   : this._computed_speed,
                     down    : this._down,
                     shown   : this._shown,
-                    colorMode : this._colorMode,
                     context : function() {
                         return self.getPaper();
                     }
@@ -575,7 +574,6 @@ function generateTurtleModule(_target) {
             this._undoBuffer = [];
             this._speed      = 3;
             this._computed_speed = 6;
-            this._colorMode  = 1.0;
             this._state      = undefined;
 
             for(var key in this._managers) {
@@ -892,7 +890,7 @@ function generateTurtleModule(_target) {
 
         proto.$pencolor = function(r,g,b,a) {
             if (r !== undefined) {
-                this._color = createColor(this._colorMode,r,g,b,a);
+                this._color = createColor(this._screen._colorMode,r,g,b,a);
                 return this.addUpdate(undefined, this._shown, {color : this._color});
             }
 
@@ -904,7 +902,7 @@ function generateTurtleModule(_target) {
 
         proto.$fillcolor = function(r,g,b,a) {
             if (r !== undefined) {
-                this._fill = createColor(this._colorMode,r,g,b,a);
+                this._fill = createColor(this._screen._colorMode,r,g,b,a);
                 return this.addUpdate(undefined, this._shown, {fill : this._fill});
             }
 
@@ -917,12 +915,12 @@ function generateTurtleModule(_target) {
         proto.$color = function(color, fill, b, a) {
             if (color !== undefined) {
                 if (fill === undefined || b !== undefined) {
-                    this._color = createColor(this._colorMode, color, fill, b, a);
+                    this._color = createColor(this._screen._colorMode, color, fill, b, a);
                     this._fill  = this._color;
                 }
                 else {
-                    this._color = createColor(this._colorMode, color);
-                    this._fill  = createColor(this._colorMode, fill);
+                    this._color = createColor(this._screen._colorMode, color);
+                    this._fill  = createColor(this._screen._colorMode, fill);
                 }
                 return this.addUpdate(undefined, this._shown, {
                     color : this._color,
@@ -998,7 +996,7 @@ function generateTurtleModule(_target) {
                 Math.max(this._size + 4, this._size * 2);
 
             color = (color !== undefined) ?
-                createColor(this._colorMode, color, g, b, a) :
+                createColor(this._screen._colorMode, color, g, b, a) :
                 this._color;
 
             return this.addUpdate(drawDot, true, undefined, size, color);
@@ -1165,7 +1163,6 @@ function generateTurtleModule(_target) {
             newTurtleInstance.instance._computed_speed = this._computed_speed;
             newTurtleInstance.instance._down = this._down;
             newTurtleInstance.instance._shown = this._shown;
-            newTurtleInstance.instance._colorMode = this._colorMode;
 
             // Other properties to copy
             newTurtleInstance.instance._isRadians = this._isRadians;
@@ -1197,6 +1194,7 @@ function generateTurtleModule(_target) {
         this._mode      = "standard";
         this._managers  = {};
         this._keyLogger = {};
+        this._colorMode = 1;
 
         w = (_config.worldWidth || _config.width || getWidth()) / 2;
         h = (_config.worldHeight || _config.height || getHeight()) / 2;
@@ -1449,7 +1447,7 @@ function generateTurtleModule(_target) {
                 } else {
                     this._colorMode = 1.0;
                 }
-                return this.addUpdate(undefined, this._shown, {colorMode : this._colorMode});
+                return;
             }
 
             return this._colorMode;
@@ -2530,6 +2528,7 @@ function generateTurtleModule(_target) {
     addModuleMethod(Screen, _module, "$window_width", getScreen);
     addModuleMethod(Screen, _module, "$window_height", getScreen);    
     addModuleMethod(Screen, _module, "$title", getScreen);
+    addModuleMethod(Screen, _module, "$colormode", getScreen)
     
     addModuleMethod(Screen, _module, "$onkey", getScreen);
     addModuleMethod(Screen, _module, "$listen", getScreen);
