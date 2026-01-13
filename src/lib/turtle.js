@@ -32,7 +32,7 @@ function generateTurtleModule(_target) {
             animate    : true, // enabled/disable all animated rendering
             bufferSize : 0, // default turtle buffer size
             allowUndo  : true, // enable ability to use the undo buffer
-            assets     : {}
+            assets     : name => name
         },
         _frameRequest,
         _frameRequestTimeout,
