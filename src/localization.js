@@ -113,6 +113,9 @@ MessageCatalog.prototype.loadDefaultCatalogs = function() {
         "abstract.unop_type_error": "bad operand type for unary {op}: '{operand}'",
         "function.missing_required_args": "{name}() missing {length} required argument{plural}",
         "int.invalid_literal": "invalid literal for int() with base {base}: '{origs}'",
+
+        // time limit
+        "timeout": "program exceeded run time limit",
     };
 
     // Russian
@@ -224,6 +227,9 @@ MessageCatalog.prototype.loadDefaultCatalogs = function() {
         "abstract.unop_type_error": "неподдерживаемый тип операнда для {op}: '{operand}'",
         "function.missing_required_args": "для {name}() отсутствует несколько ({length}) обязательных аргументов",
         "int.invalid_literal": "неверное представление числа для int() с основанием {base}: '{origs}'",
+        
+        // time limit
+        "timeout": "программа превысила ограничение по времени выполнения",
     };
 };
 

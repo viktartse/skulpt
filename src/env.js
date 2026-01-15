@@ -274,7 +274,7 @@ Sk.exportSymbol("Sk.uncaughtException", Sk.uncaughtException);
  *      Replaceable message for message timeouts
  */
 Sk.timeoutMsg = function () {
-    return "Program exceeded run time limit.";
+    return Sk.msgCatalog.t("timeout");
 };
 Sk.exportSymbol("Sk.timeoutMsg", Sk.timeoutMsg);
 
