@@ -2591,12 +2591,6 @@ function generateTurtleModule(_target) {
         if (_mouseHandler) {
             _mouseHandler.reset();
         }
-
-        _durationSinceRedraw = 0;
-        _screenInstance      = undefined;
-        _anonymousTurtle     = undefined;
-        _mouseHandler        = undefined;
-        TURTLE_COUNT         = 0;
     }
 
     return {
