@@ -1285,6 +1285,10 @@ function generateTurtleModule(_target) {
             if (height <= 1) {
                 height = getHeight() * height;
             }
+            const maxHeight = 1200;
+            const maxWidth = 2000;
+            if (height > maxHeight) height = maxHeight;
+            if (width > maxWidth) width = maxWidth;
 
             this._width  = width;
             this._height = height;
@@ -1894,16 +1898,15 @@ function generateTurtleModule(_target) {
         context.restore();
     }
 
-    function drawLine(loc, beginPath) {
+    function drawLine(loc, beginPath, lineDesc) {
         const context = this.context();
-
         if (!context) return;
 
         context.lineWidth = normalizeWidth(this.size) * getScreen().lineScale;
         // no scale for the world set
         if (Math.abs(1 - getScreen().lineScale) < 0.00001) {
             context.fillStyle = this.color;
-            drawLineDdaBased(this.x, this.y, loc.x, loc.y, context);
+            drawLineDdaBased(this.x, this.y, loc.x, loc.y, context, lineDesc);
             return;
         }
 
@@ -1911,7 +1914,6 @@ function generateTurtleModule(_target) {
             context.beginPath();
             context.moveTo(this.x, this.y);
         }
-
         context.strokeStyle = this.color;
         context.lineTo(loc.x, loc.y);
         context.stroke();
@@ -1919,68 +1921,91 @@ function generateTurtleModule(_target) {
         context.stroke();
         context.stroke();
     }
-    
-    function drawLineDdaBased(x1, y1, x2, y2, context) {
-        const dx = x2 - x1;
-        const dy = y2 - y1;
-        const maxSquarePixelSize = 3;
 
-        const width2 = Math.floor(context.lineWidth / 2);
-        const drawPixelFunc = context.lineWidth > maxSquarePixelSize ? drawRoundPixel : drawSquarePixel;
-        
-        const screen = getScreen();
+    function drawLineDdaBased(x1, y1, x2, y2, context, lineDesc) {
+        var width  = context.lineWidth,
+            width2 = Math.floor(width / 2),
+            maxSquarePixelSize = 3,
+            useRound     = width > maxSquarePixelSize,
+            drawPixelFunc = useRound ? drawRoundPixel : drawSquarePixel,
+            screen = getScreen(),
+            pixel  = useRound
+                ? drawReferencePixelOnOffScreenCanvas(width, context.fillStyle)
+                : undefined,
+            rDx = lineDesc.rDx,
+            rDy = lineDesc.rDy,
+            rxStart = lineDesc.rxStart,
+            ryStart = lineDesc.ryStart,
+            segRx1, segRy1, segRx2, segRy2,
+            slope, xMin, xMax, yMin, yMax,
+            visMin, visMax, startP, endP, x, y;
 
-        // compare with some epsilon so that for a line with angle of 45 there is no 
-        // jumping between branches for different chunks of the line
-        if (Math.abs(dx) - Math.abs(dy) > 0.00000000001) {
-            let [intX1, intX2] = getRoundedOrderedCoord(x1, x2);
+        // Zero-length line in pixel space: single stamp
+        if (rDx === 0 && rDy === 0) {
+            drawPixelFunc(rxStart, ryStart, width2, width, context, pixel);
+            return;
+        }
 
-            if (intX2 < screen.llx - width2 || intX1 > screen.urx + width2) return;
-            if (intX1 < screen.llx - width2) intX1 = screen.llx - width2;
-            if (intX2 > screen.urx + width2) intX2 = screen.urx + width2;
+        // Segment pixel bounds (which portion this animation frame covers)
+        segRx1 = Math.round(x1);
+        segRy1 = Math.round(y1);
+        segRx2 = Math.round(x2);
+        segRy2 = Math.round(y2);
 
-            const pixel = context.lineWidth > maxSquarePixelSize
-                ? drawReferencePixelOnOffScreenCanvas(context.lineWidth, context.fillStyle)
-                : undefined;
-            
-            for (let x = intX1; x <= intX2; x++) {
-                const t = (x - x1) / dx;
-                const y = getPixelNumber(dy * t + y1);
-                drawPixelFunc(x, y, width2, context.lineWidth, context, pixel);
+        if (lineDesc.xMajor) {
+            // ── X-major: step along X, interpolate Y ────────────
+            slope = rDy / rDx;   // adjusted slope through rounded endpoints
+
+            xMin = Math.min(segRx1, segRx2);
+            xMax = Math.max(segRx1, segRx2);
+
+            visMin = Math.ceil(screen.llx)  - width2 - 1;
+            visMax = Math.floor(screen.urx) + width2 + 1;
+            startP = Math.max(xMin, visMin);
+            endP   = Math.min(xMax, visMax);
+            if (startP > endP) return;
+
+            for (x = startP; x <= endP; x++) {
+                // Interpolate from the ROUNDED origin → hits both endpoints exactly
+                y = Math.round(ryStart + (x - rxStart) * slope);
+                drawPixelFunc(x, y, width2, width, context, pixel);
             }
         } else {
-            let [intY1, intY2] = getRoundedOrderedCoord(y1, y2);
+            // ── Y-major: step along Y, interpolate X ────────────
+            slope = rDx / rDy;
 
-            if (intY2 < screen.lly - width2 || intY1 > screen.ury + width2) return;
-            if (intY1 < screen.lly - width2) intY1 = screen.lly - width2;
-            if (intY2 > screen.ury + width2) intY2 = screen.ury + width2;
+            yMin = Math.min(segRy1, segRy2);
+            yMax = Math.max(segRy1, segRy2);
 
-            const pixel = context.lineWidth > maxSquarePixelSize
-                ? drawReferencePixelOnOffScreenCanvas(context.lineWidth, context.fillStyle)
-                : undefined;
-            
-            for (let y = intY1; y <= intY2; y++) {
-                const t = (y - y1) / dy;
-                const x = getPixelNumber(dx * t + x1);
-                drawPixelFunc(x, y, width2, context.lineWidth, context, pixel);
+            visMin = Math.ceil(screen.lly)  - width2 - 1;
+            visMax = Math.floor(screen.ury) + width2 + 1;
+            startP = Math.max(yMin, visMin);
+            endP   = Math.min(yMax, visMax);
+            if (startP > endP) return;
+
+            for (y = startP; y <= endP; y++) {
+                x = Math.round(rxStart + (y - ryStart) * slope);
+                drawPixelFunc(x, y, width2, width, context, pixel);
             }
         }
     }
 
-    function getRoundedOrderedCoord(x1, x2) {
-        let intX1, intX2;
-        [intX1, intX2] = [Math.min(x1, x2), Math.max(x1, x2)];
-        intX1 = Math.floor(intX1 + 0.4);
-        intX2 = Math.floor(intX2 + 0.01);
-        if (intX2 < intX1) intX2 = intX1;
-        return [intX1, intX2];
-    }
-    
-    function getPixelNumber(n)
-    {
-        // to be better aligned with the standard "fill" implementation
-        // for canvas
-        return Math.floor(n + 0.01)
+    function computeLineDesc(x1, y1, x2, y2) {
+        var rxStart = Math.round(x1);
+        var ryStart = Math.round(y1);
+        var rxEnd   = Math.round(x2);
+        var ryEnd   = Math.round(y2);
+        var rDx     = rxEnd - rxStart;
+        var rDy     = ryEnd - ryStart;
+        return {
+            rxStart: rxStart,
+            ryStart: ryStart,
+            rxEnd:   rxEnd,
+            ryEnd:   ryEnd,
+            rDx:     rDx,
+            rDy:     rDy,
+            xMajor:  Math.abs(rDx) >= Math.abs(rDy)
+        };
     }
     
     function normalizeWidth(width) {
@@ -2059,73 +2084,114 @@ function generateTurtleModule(_target) {
         return offscreenCanvas;
     }
 
+    function scanLineFill(path, fillColor, context) {
+        var numPoints = path.length;
+        if (numPoints < 3) return;
+
+        var screen = getScreen();
+        var edges = [];
+        var i, j, y, rx1, ry1, rx2, ry2, e, t, x;
+
+        // Build non-horizontal edges from rounded coordinates
+        for (i = 0; i < numPoints; i++) {
+            rx1 = Math.round(path[i].x);
+            ry1 = Math.round(path[i].y);
+            rx2 = Math.round(path[(i + 1) % numPoints].x);
+            ry2 = Math.round(path[(i + 1) % numPoints].y);
+
+            if (ry1 === ry2) continue;
+
+            edges.push({
+                x: rx1, y1: ry1,
+                dx: rx2 - rx1,
+                dy: ry2 - ry1,
+                yMin: Math.min(ry1, ry2),
+                yMax: Math.max(ry1, ry2)
+            });
+        }
+
+        if (edges.length < 2) return;
+
+        // Find vertical extent
+        var yMin = Infinity, yMax = -Infinity;
+        for (i = 0; i < edges.length; i++) {
+            if (edges[i].yMin < yMin) yMin = edges[i].yMin;
+            if (edges[i].yMax > yMax) yMax = edges[i].yMax;
+        }
+
+        yMin = Math.max(yMin, Math.ceil(screen.lly));
+        yMax = Math.min(yMax, Math.floor(screen.ury));
+
+        var xClampMin = Math.ceil(screen.llx);
+        var xClampMax = Math.floor(screen.urx);
+
+        context.fillStyle = fillColor;
+
+        for (y = yMin; y < yMax; y++) {
+            // Collect edge crossings at the center of this pixel row (y + 0.5)
+            var crossings = [];
+            for (i = 0; i < edges.length; i++) {
+                e = edges[i];
+                if (y >= e.yMin && y < e.yMax) {
+                    t = (y + 0.5 - e.y1) / e.dy;
+                    crossings.push(e.x + t * e.dx);
+                }
+            }
+
+            if (crossings.length < 2) continue;
+            crossings.sort(function(a, b) { return a - b; });
+
+            // Fill between consecutive pairs (even-odd rule)
+            for (j = 0; j + 1 < crossings.length; j += 2) {
+                var xL = Math.max(Math.ceil(crossings[j]),      xClampMin);
+                var xR = Math.min(Math.floor(crossings[j + 1]), xClampMax);
+                if (xR >= xL) {
+                    context.fillRect(xL, y, xR - xL + 1, 1);
+                }
+            }
+        }
+    }
+
     function drawFill() {
         var context = this.context(),
             path  = this.fillBuffer,
-            i;
+            i, desc;
 
         if (!context || !path || !path.length) return;
 
         context.save();
 
-        // Fill only if fill color is set. Can be empty string.
-        // color("red", "")
+        // ① Scan-line fill using the same rounded polygon as the DDA
         if (this.fill) {
-            context.beginPath();
-            context.moveTo(path[0].x, path[0].y);
-            for (i = 1; i < path.length; i++) {
-                context.lineTo(path[i].x, path[i].y);
-            }
-            context.closePath();
-            context.fillStyle = this.fill;
-            context.fill("evenodd");
+            scanLineFill(path, this.fill, context);
         }
 
-        const startTimestamp = performance.now();
-        let preferQuality = true;
-        
-        for(i = 1; i < path.length - 1; i++) {
-            if (!path[i].stroke) {
-                continue;
-            }
+        // ② DDA outline on top
+        for (i = 1; i < path.length - 1; i++) {
+            if (!path[i].stroke) continue;
 
+            desc = computeLineDesc(
+                path[i].x, path[i].y,
+                path[i + 1].x, path[i + 1].y
+            );
             context.lineWidth = normalizeWidth(path[i].size) * getScreen().lineScale;
             context.fillStyle = path[i].color;
-            drawLineDdaBased(path[i].x, path[i].y, path[i + 1].x, path[i + 1].y, context);
-
-            const endTimestamp = performance.now();
-            // I don't want the user's browser to freeze 
-            if (endTimestamp - startTimestamp > 100) { // this is the max time I'm ok to spend drawing
-                preferQuality = false;
-                break;
-            }
-        }
-
-        if (preferQuality) return;
-        
-        // re-draw lines fast
-        for(i = 1; i < path.length - 1; i++) {
-            if (!path[i].stroke) {
-                continue;
-            }
-
-            context.lineWidth = normalizeWidth(path[i].size) * getScreen().lineScale;
-            context.beginPath();
-            context.moveTo(path[i].x, path[i].y);
-            context.strokeStyle = path[i].color;
-            context.lineTo(path[i + 1].x, path[i + 1].y);
-            context.stroke();
+            drawLineDdaBased(
+                path[i].x, path[i].y,
+                path[i + 1].x, path[i + 1].y,
+                context, desc
+            );
         }
 
         context.restore();
     }
-    
-    function partialTranslate(turtle, x, y, beginPath, countAsFrame) {
+
+    function partialTranslate(turtle, x, y, beginPath, countAsFrame, lineDesc) {
         return function() {
             return turtle.addUpdate(
                 function(loc) {
                     if (this.down) {
-                        drawLine.call(this, loc, beginPath);
+                        drawLine.call(this, loc, beginPath, lineDesc);
                     }
                 },
                 countAsFrame,
@@ -2136,7 +2202,6 @@ function generateTurtleModule(_target) {
     }
 
     function translate(turtle, startX, startY, dx, dy, beginPath, isCircle) {
-        // speed is in pixels per ms
         var speed   = turtle._computed_speed,
             screen  = getScreen(),
             xScale  = Math.abs(screen.xScale),
@@ -2152,12 +2217,13 @@ function generateTurtleModule(_target) {
                 Promise.resolve() :
                 new InstantPromise(),
             countAsFrame = (!speed && isCircle) ? false : true,
+            lineDesc = computeLineDesc(startX, startY, startX + dx, startY + dy),
             i;
 
         turtle.addUpdate(function() {
             if (this.filling) {
                 this.fillBuffer.push({
-                    x        : this.x,
+                    x      : this.x,
                     y      : this.y,
                     stroke : this.down,
                     color  : this.color,
@@ -2166,11 +2232,11 @@ function generateTurtleModule(_target) {
             }
         }, false);
 
-        for(i = 0; i < frames; i++) {
-            x = startX + xStep * (i+1);
-            y = startY + yStep * (i+1);
+        for (i = 0; i < frames; i++) {
+            x = startX + xStep * (i + 1);
+            y = startY + yStep * (i + 1);
             promise = promise.then(
-                partialTranslate(turtle, x, y, beginPath, countAsFrame)
+                partialTranslate(turtle, x, y, beginPath, countAsFrame, lineDesc)
             );
             beginPath = false;
         }
