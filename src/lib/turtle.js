@@ -1022,8 +1022,17 @@ function generateTurtleModule(_target) {
                 font = [type, size, face].join(" ");
             }
 
-            if (!align) {
+            var validAligns = ["left", "center", "right"];
+            if (align == null) {
                 align = "left";
+            } else {
+                var normalized = typeof align === "string" ? align.toLowerCase() : align;
+                if (validAligns.indexOf(normalized) === -1) {
+                    throw new Sk.builtin.ValueError(
+                        'align must be one of "left", "center", "right"'
+                    );
+                }
+                align = normalized;
             }
 
             promise = this.addUpdate(
