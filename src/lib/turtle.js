@@ -1005,22 +1005,12 @@ function generateTurtleModule(_target) {
 
         proto.$write = function(message, move, align, font) {
             var self = this,
-                promise, face, size, type, width;
+                promise, width;
 
             pushUndo(this);
 
             message = String(message);
-
-            if (font && font.constructor === Array) {
-                face = typeof font[0] === "string" && font[0] !== "" ? font[0] : "Arial";
-                size = String(font[1] || "12pt");
-                type = typeof font[2] === "string" ? font[2] : "normal";
-                if (/^\d+$/.test(size)) {
-                    size += "pt";
-                }
-
-                font = [type, size, face].join(" ");
-            }
+            font = formatWriteFont(font);
 
             var validAligns = ["left", "center", "right"];
             if (align == null) {
@@ -1880,11 +1870,28 @@ function generateTurtleModule(_target) {
         context.fill();
     }
 
+    var DEFAULT_WRITE_FONT = ["Arial", 8, "normal"];
+
+    function formatWriteFont(font) {
+        var face, size, type;
+        if (!font || (typeof font !== "string" && font.constructor !== Array)) {
+            font = DEFAULT_WRITE_FONT;
+        }
+        if (typeof font === "string") {
+            return font;
+        }
+        face = typeof font[0] === "string" && font[0] !== "" ? font[0] : "Arial";
+        size = String(font[1] != null ? font[1] : 8);
+        type = typeof font[2] === "string" ? font[2] : "normal";
+        if (/^\d+$/.test(size)) {
+            size += "pt";
+        }
+        return [type, size, face].join(" ");
+    }
+
     var textMeasuringContext = document.createElement("canvas").getContext("2d");
     function measureText(message, font) {
-        if (font) {
-            textMeasuringContext.font = font;
-        }
+        textMeasuringContext.font = formatWriteFont(font);
         return textMeasuringContext.measureText(message).width;
     }
 
@@ -1894,9 +1901,7 @@ function generateTurtleModule(_target) {
         if (!context) return;
 
         context.save();
-        if (font) {
-            context.font = font;
-        }
+        context.font = formatWriteFont(font);
         if (align && align.match(/^(left|right|center)$/)) {
             context.textAlign = align;
         }
