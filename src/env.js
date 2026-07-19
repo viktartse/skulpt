@@ -79,6 +79,9 @@ Sk.configure = function (options) {
     Sk.robot = options["robot"];
     Sk.checkRobot(Sk.robot);
 
+    Sk.microbit = options["microbit"];
+    Sk.checkMicrobit(Sk.microbit);
+
     Sk.send_message = options["send_message"] || function() {};
     Sk.asserts.assert(typeof Sk.send_message === "function");
     
@@ -252,6 +255,34 @@ Sk.checkRobot = function(robotImplementation) {
             throw new Error("Robot. No method '" + method + "' found");
         }
     }
+};
+
+Sk.checkMicrobit = function(microbitImplementation) {
+    if (!microbitImplementation) {
+        return;
+    }
+
+    if (typeof microbitImplementation != "object") {
+        throw new Error("Microbit. Microbit implementation must be an object");
+    }
+
+    [
+        "show",
+        "scroll",
+        "setPixel",
+        "getPixel",
+        "clear",
+        "isPressed",
+        "wasPressed",
+        "getPresses",
+        "sleep",
+        "runningTime",
+        "charToMatrix",
+    ].forEach(function (method) {
+        if (typeof microbitImplementation[method] != "function") {
+            throw new Error("Microbit. No method '" + method + "' found");
+        }
+    });
 };
 
 

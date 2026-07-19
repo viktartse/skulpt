@@ -31,6 +31,7 @@ function test (python3, opt, module = undefined) {
     Sk.configure({
         syspath: [dir],
         robot: getRobotImpl(),
+        microbit: getMicrobitImpl(),
         read: (fname) => { return fs.readFileSync(fname, "utf8"); },
         output: (args) => { Sk.buf += args; },
         __future__: pyver
@@ -129,6 +130,69 @@ function getRobotImpl() {
         printNumber: (num) => lastCall = "printNumber_" + num,
         getLastCall: () => lastCall
     }
+}
+
+function getMicrobitImpl() {
+    let lastCall = "";
+    let matrix = emptyMatrix();
+    let clock = 0;
+    let pressed = { A: false, B: false };
+    let was = { A: false, B: false };
+    let presses = { A: 0, B: 0 };
+
+    function emptyMatrix() {
+        return [
+            [0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0],
+        ];
+    }
+
+    return {
+        show: (m) => { lastCall = "show"; matrix = m.map(r => r.slice()); },
+        scroll: (text) => { lastCall = "scroll_" + text; },
+        setPixel: (x, y, v) => {
+            lastCall = "setPixel";
+            if (x < 0 || x > 4 || y < 0 || y > 4) throw new Error("oob");
+            if (v < 0 || v > 9) throw new Error("bright");
+            matrix[y][x] = v;
+        },
+        getPixel: (x, y) => {
+            lastCall = "getPixel";
+            if (x < 0 || x > 4 || y < 0 || y > 4) throw new Error("oob");
+            return matrix[y][x];
+        },
+        clear: () => { lastCall = "clear"; matrix = emptyMatrix(); },
+        isPressed: (b) => { lastCall = "isPressed_" + b; return !!pressed[b]; },
+        wasPressed: (b) => {
+            lastCall = "wasPressed_" + b;
+            const v = !!was[b];
+            was[b] = false;
+            return v;
+        },
+        getPresses: (b) => {
+            lastCall = "getPresses_" + b;
+            const n = presses[b] || 0;
+            presses[b] = 0;
+            return n;
+        },
+        sleep: (ms) => {
+            lastCall = "sleep_" + ms;
+            clock += ms;
+            return Promise.resolve();
+        },
+        runningTime: () => clock,
+        charToMatrix: (ch) => {
+            lastCall = "char_" + ch;
+            // Simple filled center for tests
+            const m = emptyMatrix();
+            m[2][2] = 9;
+            return m;
+        },
+        getLastCall: () => lastCall,
+    };
 }
 
 program
