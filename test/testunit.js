@@ -186,9 +186,10 @@ function getMicrobitImpl() {
         runningTime: () => clock,
         charToMatrix: (ch) => {
             lastCall = "char_" + ch;
-            // Simple filled center for tests
+            // Distinct fingerprint per char (center on + top-left digit of code % 10).
             const m = emptyMatrix();
             m[2][2] = 9;
+            m[0][0] = (ch.charCodeAt(0) || 0) % 10;
             return m;
         },
         getLastCall: () => lastCall,

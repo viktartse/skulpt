@@ -20,6 +20,37 @@ class MicrobitTestCase(unittest.TestCase):
         self.assertEqual(microbit.last_call(), "show")
         self.assertEqual(microbit.display.get_pixel(4, 0), 9)
 
+    def test_display_show_string_sequence(self):
+        microbit.display.clear()
+        t0 = microbit.running_time()
+        microbit.display.show("AB", delay=50)
+        # Multi-char: sleep after every frame including the last.
+        self.assertGreaterEqual(microbit.running_time(), t0 + 100)
+        # Final frame is 'B' (mock fingerprint: code % 10 in [0][0]).
+        self.assertEqual(microbit.display.get_pixel(0, 0), ord("B") % 10)
+        self.assertEqual(microbit.display.get_pixel(2, 2), 9)
+
+    def test_display_show_single_char_no_delay(self):
+        microbit.display.clear()
+        t0 = microbit.running_time()
+        microbit.display.show("A", delay=50)
+        self.assertEqual(microbit.running_time(), t0)
+        self.assertEqual(microbit.display.get_pixel(0, 0), ord("A") % 10)
+
+    def test_display_show_string_not_image_pattern(self):
+        # Multi-char strings are shown glyph-by-glyph, not parsed as Image patterns.
+        microbit.display.clear()
+        pattern = "12345:00000:00000:00000:54321"
+        microbit.display.show(pattern, delay=0)
+        self.assertEqual(microbit.display.get_pixel(0, 0), ord(pattern[-1]) % 10)
+        self.assertEqual(microbit.display.get_pixel(2, 2), 9)
+
+    def test_display_show_empty_string_noop(self):
+        microbit.display.clear()
+        microbit.display.set_pixel(0, 0, 5)
+        microbit.display.show("")
+        self.assertEqual(microbit.display.get_pixel(0, 0), 5)
+
     def test_display_set_get_clear(self):
         microbit.display.clear()
         microbit.display.set_pixel(2, 3, 7)

@@ -142,23 +142,6 @@ var $builtinmodule = function () {
     Image.prototype.YES = new Image(parseImagePattern("00009:00090:90900:09000:00900"));
     Image.prototype.NO = new Image(parseImagePattern("90009:09090:00900:09090:90009"));
 
-    function toMatrix(value) {
-        if (value instanceof Image) {
-            return value.matrix.map((row) => row.slice());
-        }
-        if (checkString(value)) {
-            const s = remapToJs(value);
-            if (s.length === 1) {
-                return mb.charToMatrix(s);
-            }
-            return parseImagePattern(s);
-        }
-        if (checkInt(value)) {
-            return mb.charToMatrix(String(remapToJs(value)));
-        }
-        throw new pyTypeError("expected Image, string or integer");
-    }
-
     function maybeSuspend(result) {
         if (result && typeof result.then === "function") {
             return new Sk.misceval.promiseToSuspension(result.then(() => pyNone));
@@ -166,15 +149,45 @@ var $builtinmodule = function () {
         return pyNone;
     }
 
+    function thenable(result) {
+        if (result && typeof result.then === "function") {
+            return result;
+        }
+        return Promise.resolve();
+    }
+
+    /** Multi-char: sleep after every frame including the last. Single char: no sleep. */
+    function showTextSequence(text, delayMs) {
+        if (text.length === 0) {
+            return pyNone;
+        }
+        const pauseAfterEach = text.length > 1;
+        let chain = Promise.resolve();
+        for (let i = 0; i < text.length; i++) {
+            const ch = text.charAt(i);
+            chain = chain.then(() => thenable(mb.show(mb.charToMatrix(ch))));
+            if (pauseAfterEach) {
+                chain = chain.then(() => thenable(mb.sleep(delayMs)));
+            }
+        }
+        return maybeSuspend(chain);
+    }
+
     const Display = buildNativeClass("microbit.Display", {
         constructor: function Display() {},
         methods: {
             show: {
-                $meth(value) {
-                    const matrix = toMatrix(value);
-                    return maybeSuspend(mb.show(matrix));
+                $meth(value, delay) {
+                    const delayMs = asNonNegInt(delay, "delay");
+                    if (value instanceof Image) {
+                        return maybeSuspend(mb.show(value.matrix.map((row) => row.slice())));
+                    }
+                    if (checkString(value) || checkInt(value)) {
+                        return showTextSequence(String(remapToJs(value)), delayMs);
+                    }
+                    throw new pyTypeError("expected Image, string or integer");
                 },
-                $flags: { MinArgs: 1, MaxArgs: 5 },
+                $flags: { NamedArgs: ["value", "delay"], Defaults: [new pyInt(400)] },
             },
             scroll: {
                 $meth(text, delay) {
