@@ -152,7 +152,21 @@ function getMicrobitImpl() {
 
     return {
         show: (m) => { lastCall = "show"; matrix = m.map(r => r.slice()); },
-        scroll: (text) => { lastCall = "scroll_" + text; },
+        showText: (text, delayMs) => {
+            lastCall = "showText_" + text + "_" + delayMs;
+            if (!text || text.length === 0) {
+                return;
+            }
+            const last = text.charAt(text.length - 1);
+            const m = emptyMatrix();
+            m[2][2] = 9;
+            m[0][0] = (last.charCodeAt(0) || 0) % 10;
+            matrix = m;
+            if (text.length > 1) {
+                clock += delayMs * text.length;
+                return Promise.resolve();
+            }
+        },
         setPixel: (x, y, v) => {
             lastCall = "setPixel";
             if (x < 0 || x > 4 || y < 0 || y > 4) throw new Error("oob");
@@ -184,14 +198,6 @@ function getMicrobitImpl() {
             return Promise.resolve();
         },
         runningTime: () => clock,
-        charToMatrix: (ch) => {
-            lastCall = "char_" + ch;
-            // Distinct fingerprint per char (center on + top-left digit of code % 10).
-            const m = emptyMatrix();
-            m[2][2] = 9;
-            m[0][0] = (ch.charCodeAt(0) || 0) % 10;
-            return m;
-        },
         getLastCall: () => lastCall,
     };
 }

@@ -268,7 +268,7 @@ Sk.checkMicrobit = function(microbitImplementation) {
 
     [
         "show",
-        "scroll",
+        "showText",
         "setPixel",
         "getPixel",
         "clear",
@@ -277,7 +277,6 @@ Sk.checkMicrobit = function(microbitImplementation) {
         "getPresses",
         "sleep",
         "runningTime",
-        "charToMatrix",
     ].forEach(function (method) {
         if (typeof microbitImplementation[method] != "function") {
             throw new Error("Microbit. No method '" + method + "' found");
