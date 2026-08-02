@@ -88,9 +88,15 @@ function $builtinmodule() {
         const textSize = 14;
         const axesStrokeWeight = 6;
         const tickStokeWeight = 2;
-        const crossLineWeight = 0.2;
+        // Use 1px + alpha instead of subpixel weight: Chrome/Skia can drop
+        // horizontal hairlines (lineWidth < 1), e.g. Chrome 109 on Windows 7.
+        const crossLineWeight = 1;
+        const crossLineAlpha = 65;
         const height = Math.min(pInstance.height, 10_000);
         const width = Math.min(pInstance.width, 10_000);
+
+        const gridColor = pInstance.color(color);
+        gridColor.setAlpha(crossLineAlpha);
 
         pInstance.textSize(textSize);
         pInstance.fill(color);
@@ -103,11 +109,11 @@ function $builtinmodule() {
 
         // x ticks
         for (let x = step; x < width; x += step) {
-            pInstance.stroke(color);
-            
+            pInstance.stroke(gridColor);
             pInstance.strokeWeight(crossLineWeight);
             pInstance.line(x, 0, x, height - 1);
-            
+
+            pInstance.stroke(color);
             pInstance.strokeWeight(tickStokeWeight);
             pInstance.line(x, 0, x, tickSize);
             
@@ -119,11 +125,11 @@ function $builtinmodule() {
 
         // y ticks
         for (let y = step; y < height; y += step) {
-            pInstance.stroke(color);
-            
+            pInstance.stroke(gridColor);
             pInstance.strokeWeight(crossLineWeight);
             pInstance.line(0, y, width - 1, y);
-            
+
+            pInstance.stroke(color);
             pInstance.strokeWeight(tickStokeWeight);
             pInstance.line(0, y, tickSize, y);
 
