@@ -282,6 +282,10 @@ Sk.checkMicrobit = function(microbitImplementation) {
             throw new Error("Microbit. No method '" + method + "' found");
         }
     });
+
+    if (!microbitImplementation.builtinImages || typeof microbitImplementation.builtinImages != "object") {
+        throw new Error("Microbit. builtinImages is missing");
+    }
 };
 
 

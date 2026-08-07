@@ -18,7 +18,7 @@ class MicrobitTestCase(unittest.TestCase):
         microbit.display.clear()
         microbit.display.show(microbit.Image.YES)
         self.assertEqual(microbit.last_call(), "show")
-        self.assertEqual(microbit.display.get_pixel(4, 0), 9)
+        self.assertEqual(microbit.display.get_pixel(4, 1), 9)
 
     def test_display_show_string_sequence(self):
         microbit.display.clear()

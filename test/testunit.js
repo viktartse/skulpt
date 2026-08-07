@@ -199,6 +199,15 @@ function getMicrobitImpl() {
         },
         runningTime: () => clock,
         getLastCall: () => lastCall,
+        // Fixture copy for unit tests; product source of truth is SidWebUi BUILTIN_MICROBIT_IMAGES.
+        builtinImages: {
+            HEART: "09090:99999:99999:09990:00900",
+            HEART_SMALL: "00000:09090:09990:00900:00000",
+            HAPPY: "00000:09090:00000:90009:09990",
+            SAD: "00000:09090:00000:09990:90009",
+            YES: "00000:00009:00090:90900:09000",
+            NO: "90009:09090:00900:09090:90009",
+        },
     };
 }
 

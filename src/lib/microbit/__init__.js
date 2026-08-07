@@ -135,12 +135,14 @@ var $builtinmodule = function () {
         },
     });
 
-    Image.prototype.HEART = new Image(parseImagePattern("09090:99999:99999:09990:00900"));
-    Image.prototype.HEART_SMALL = new Image(parseImagePattern("00000:09090:09990:00900:00000"));
-    Image.prototype.HAPPY = new Image(parseImagePattern("00000:09090:00000:90009:09990"));
-    Image.prototype.SAD = new Image(parseImagePattern("00000:09090:00000:09990:90009"));
-    Image.prototype.YES = new Image(parseImagePattern("00000:00009:00090:90900:09000"));
-    Image.prototype.NO = new Image(parseImagePattern("90009:09090:00900:09090:90009"));
+    // Built-in Image.* patterns come from the host backend (SidWebUi MicrobitDevice).
+    const builtins = mb.builtinImages;
+    if (!builtins || typeof builtins !== "object") {
+        throw new Error("Microbit. builtinImages is missing");
+    }
+    Object.keys(builtins).forEach(function (name) {
+        Image.prototype[name] = new Image(parseImagePattern(builtins[name]));
+    });
 
     function maybeSuspend(result) {
         if (result && typeof result.then === "function") {
